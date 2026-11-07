@@ -2,24 +2,6 @@
    Dozo Genshin - Main App Script
    ============================================ */
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-let auth = null;
-try {
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-    firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-  }
-} catch (e) {
-  console.warn("Firebase ยังไม่ได้ตั้งค่า:", e.message);
-}
 
 // ---------- DOM ----------
 const loadingScreen = document.getElementById("loading-screen");
@@ -38,6 +20,12 @@ const btnText = loginBtn.querySelector(".btn-text");
 const btnLoader = loginBtn.querySelector(".btn-loader");
 const authError = document.getElementById("auth-error");
 const registerLink = document.getElementById("register-link");
+const registerNameInput = document.getElementById("register-name");
+const confirmPasswordInput = document.getElementById("confirm-password");
+const registerNameGroup = document.getElementById("register-name-group");
+const confirmPasswordGroup = document.getElementById("confirm-password-group");
+const authFooterText = document.getElementById("auth-footer-text");
+let isRegisterMode = false;
 
 const userEmailEl = document.getElementById("user-email");
 const displayNameEl = document.getElementById("display-name");
@@ -51,7 +39,8 @@ const views = {
   orderAbyss: document.getElementById("view-order-abyss"),
   orderExplore: document.getElementById("view-order-explore"),
   history: document.getElementById("view-history"),
-  contact: document.getElementById("view-contact")
+  contact: document.getElementById("view-contact"),
+  admin: document.getElementById("view-admin")
 };
 
 // Farm form
@@ -108,8 +97,6 @@ let hasExploreSlip = false;
 let currentUser = null;
 let isAdmin = false;
 
-const ADMIN_EMAILS = ["admin@dozo.com", "admin@dozogemshin.com", "dozoadmin"];
-
 const TEAM_MEMBERS = [
   { name: "Dozo", role: "เจ้าของร้าน", meta: "จัดการออเดอร์ทั้งหมด" },
   { name: "Aoi", role: "ทีมฟาร์มเจม", meta: "รับงาน Primogem / Mora" },
@@ -118,30 +105,45 @@ const TEAM_MEMBERS = [
   { name: "Mika", role: "ทีมสำรวจ", meta: "เปิดแผนที่ / เก็บของ" }
 ];
 
-// ใช้ DozoAPI (js/api.js) — มี Neon เมื่อตั้ง DOZO_API_BASE, ไม่มีก็ localStorage
+// ---------- Neon API client ----------
 async function loadOrders() {
-  if (window.DozoAPI) return DozoAPI.listOrders();
-  return [];
+  return DozoAPI.listOrders();
 }
 
-async function saveOrder(order) {
-  const payload = {
-    status: "pending",
-    customerEmail: currentUser?.email || "guest",
-    ...order
-  };
-  if (window.DozoAPI) return DozoAPI.createOrder(payload);
-  return payload;
+// รูปจะถูกเก็บใน Private Vercel Blob ส่วน Neon เก็บเฉพาะ pathname
+async function saveOrder(order, { slipFile, attachmentFile = null } = {}) {
+  if (!slipFile) throw new Error("กรุณาเลือกไฟล์สลิปก่อนสั่งซื้อ");
+  const slip = await DozoAPI.uploadFile(slipFile, "slip");
+  let attachment = null;
+  if (attachmentFile) {
+    attachment = await DozoAPI.uploadFile(attachmentFile, "material_screenshot");
+  }
+  return DozoAPI.createOrder({
+    ...order,
+    slipPath: slip.pathname,
+    attachmentPath: attachment?.pathname || null
+  });
 }
 
 async function updateOrderStatus(id, status) {
-  if (window.DozoAPI) return DozoAPI.updateOrderStatus(id, status);
+  return DozoAPI.updateOrderStatus(id, status);
 }
 
-function checkIsAdmin(email) {
-  if (!email) return false;
-  const e = email.trim().toLowerCase();
-  return ADMIN_EMAILS.some(a => e === a.toLowerCase() || e.startsWith(a.toLowerCase()));
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function privateFileLink(pathname, label) {
+  if (!pathname) return "";
+  const url = DozoAPI.fileUrl(pathname);
+  return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+}
+
+async function handleOrderError(error) {
+  console.error(error);
+  alert(error?.message || "บันทึกคำสั่งซื้อไม่สำเร็จ กรุณาลองใหม่");
 }
 
 // ---------- Packages (จากภาพเรทราคา) ----------
@@ -193,6 +195,11 @@ const CHARACTERS = [
 
 let selectedPackage = null;
 let hasSlip = false;
+let selectedFarmSlipFile = null;
+let selectedMatScreenshotFile = null;
+let selectedMatSlipFile = null;
+let selectedAbyssSlipFile = null;
+let selectedExploreSlipFile = null;
 
 let selectedCharacter = null;
 let hasMatShot = false;
@@ -269,21 +276,30 @@ function setLoading(isLoading) {
   btnLoader.classList.toggle("hidden", !isLoading);
 }
 
+function setAuthMode(registerMode) {
+  isRegisterMode = registerMode;
+  registerNameGroup?.classList.toggle("hidden", !registerMode);
+  confirmPasswordGroup?.classList.toggle("hidden", !registerMode);
+  if (registerNameInput) registerNameInput.required = registerMode;
+  if (confirmPasswordInput) confirmPasswordInput.required = registerMode;
+  if (passwordInput) passwordInput.autocomplete = registerMode ? "new-password" : "current-password";
+  if (btnText) btnText.textContent = registerMode ? "สมัครสมาชิก" : "เข้าสู่ระบบ";
+  if (authFooterText) authFooterText.textContent = registerMode ? "มีบัญชีอยู่แล้ว?" : "ยังไม่มีบัญชี?";
+  if (registerLink) registerLink.textContent = registerMode ? "เข้าสู่ระบบ" : "สมัครสมาชิก";
+  if (authError) authError.classList.add("hidden");
+}
+
 function goToDashboard(user) {
   currentUser = user;
-  isAdmin = checkIsAdmin(user.email);
-  userEmailEl.textContent = user.email || "ผู้ใช้";
-  displayNameEl.textContent = user.displayName || user.email?.split("@")[0] || "นักเดินทาง";
+  isAdmin = user?.role === "admin";
+  userEmailEl.textContent = user?.email || "ผู้ใช้";
+  displayNameEl.textContent = user?.displayName || user?.email?.split("@")[0] || "นักเดินทาง";
 
   const adminNav = document.getElementById("nav-admin");
-  if (adminNav) {
-    adminNav.classList.toggle("hidden", !isAdmin);
-    adminNav.classList.toggle("admin-only", true);
-  }
+  if (adminNav) adminNav.classList.toggle("hidden", !isAdmin);
 
   switchScreen(loginScreen, dashboardScreen);
   showView(isAdmin ? "admin" : "home");
-  if (isAdmin) renderAdminAll();
 }
 
 loginForm.addEventListener("submit", async (e) => {
@@ -293,36 +309,43 @@ loginForm.addEventListener("submit", async (e) => {
   const password = passwordInput.value;
   if (!email || !password) { showError("กรุณากรอกอีเมลและรหัสผ่าน"); return; }
 
-  setLoading(true);
-
-  if (!auth) {
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    goToDashboard({ email, displayName: email.split("@")[0] });
+  if (isRegisterMode && password !== confirmPasswordInput.value) {
+    showError("รหัสผ่านทั้งสองช่องไม่ตรงกัน");
     return;
   }
 
+  setLoading(true);
   try {
-    await auth.signInWithEmailAndPassword(email, password);
+    const result = isRegisterMode
+      ? await DozoAPI.register({
+          email,
+          password,
+          displayName: registerNameInput.value.trim()
+        })
+      : await DozoAPI.login({ email, password });
+    goToDashboard(result.user);
+    loginForm.reset();
+    setAuthMode(false);
   } catch (error) {
+    showError(error.message || "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่");
+  } finally {
     setLoading(false);
-    let msg = "เข้าสู่ระบบไม่สำเร็จ";
-    if (["auth/user-not-found", "auth/wrong-password", "auth/invalid-credential"].includes(error.code)) {
-      msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
-    } else if (error.code === "auth/invalid-email") msg = "รูปแบบอีเมลไม่ถูกต้อง";
-    else if (error.code === "auth/too-many-requests") msg = "ลองหลายครั้งเกินไป กรุณารอสักครู่";
-    else msg = error.message;
-    showError(msg);
   }
 });
 
 registerLink.addEventListener("click", (e) => {
   e.preventDefault();
-  showError("ระบบสมัครสมาชิกจะเปิดใช้งานในเวอร์ชันถัดไป");
+  setAuthMode(!isRegisterMode);
 });
 
 logoutBtn.addEventListener("click", async () => {
-  if (auth) await auth.signOut();
+  try {
+    await DozoAPI.logout();
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+  currentUser = null;
+  isAdmin = false;
   dashboardScreen.classList.remove("active");
   setTimeout(() => {
     dashboardScreen.style.display = "none";
@@ -330,15 +353,19 @@ logoutBtn.addEventListener("click", async () => {
     void loginScreen.offsetWidth;
     loginScreen.classList.add("active");
     loginForm.reset();
+    setAuthMode(false);
     hideError();
   }, 400);
 });
 
-function checkAuthState() {
-  if (!auth) return;
-  auth.onAuthStateChanged((user) => {
-    if (user && loginScreen.classList.contains("active")) goToDashboard(user);
-  });
+async function checkAuthState() {
+  try {
+    const user = await DozoAPI.me();
+    if (user) goToDashboard(user);
+  } catch (error) {
+    console.error("Session check failed:", error);
+    showError("เชื่อมต่อระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ");
+  }
 }
 
 // ---------- Views / Navbar ----------
@@ -348,7 +375,7 @@ function showView(name) {
     home: views.home,
     history: views.history,
     contact: views.contact,
-    admin: document.getElementById("view-admin"),
+    admin: views.admin,
     "order-farm": views.orderFarm,
     "order-material": views.orderMaterial,
     "order-abyss": views.orderAbyss,
@@ -361,6 +388,7 @@ function showView(name) {
   });
 
   if (name === "admin" && isAdmin) renderAdminAll();
+  if (name === "history") renderCustomerHistory();
 }
 
 document.querySelectorAll(".nav-item").forEach(btn => {
@@ -403,6 +431,11 @@ document.querySelectorAll(".service-card").forEach(card => {
 function renderPackages() {
   packageGrid.innerHTML = "";
   selectedPackage = null;
+  hasSlip = false;
+  selectedFarmSlipFile = null;
+  if (slipUpload) slipUpload.value = "";
+  slipPreview?.classList.add("hidden");
+  if (uploadPlaceholder) uploadPlaceholder.style.display = "block";
   updateTotal();
   updateSubmitState();
 
@@ -441,7 +474,8 @@ rushCheck?.addEventListener("change", updateTotal);
 
 // ---------- Slip Upload ----------
 function handleSlipFile(file) {
-  if (!file || !file.type.startsWith("image/")) {
+  if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+    selectedFarmSlipFile = null;
     hasSlip = false;
     slipPreview.classList.add("hidden");
     uploadPlaceholder.style.display = "block";
@@ -449,6 +483,7 @@ function handleSlipFile(file) {
     return;
   }
 
+  selectedFarmSlipFile = file;
   const reader = new FileReader();
   reader.onload = (e) => {
     slipPreview.src = e.target.result;
@@ -485,51 +520,41 @@ function updateSubmitState() {
 // ---------- Submit Order ----------
 farmForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  if (!selectedPackage) {
-    alert("กรุณาเลือกจำนวนเจม");
-    return;
-  }
-  if (!hasSlip) {
-    slipError.classList.add("show");
-    return;
-  }
+  if (!selectedPackage) { alert("กรุณาเลือกจำนวนเจม"); return; }
+  if (!hasSlip || !selectedFarmSlipFile) { slipError.classList.add("show"); return; }
 
   const userVal = document.getElementById("game-user").value.trim();
   const uidVal = document.getElementById("game-id").value.trim();
-  const passVal = document.getElementById("game-pass").value;
+  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
 
-  if (!userVal || !uidVal || !passVal) {
-    alert("กรุณากรอกข้อมูลบัญชีให้ครบ (User, ID, Password)");
-    return;
-  }
-
-  const data = {
-    service: "farm-gem",
+  const details = {
     gems: selectedPackage.gems,
-    basePrice: selectedPackage.price,
     rush: rushCheck.checked,
-    totalPrice: rushCheck.checked ? Math.round(selectedPackage.price * 1.3) : selectedPackage.price,
-    user: userVal,
-    uid: uidVal,
-    pass: passVal,
     prohibitions: document.getElementById("prohibitions").value.trim(),
     stream: document.querySelector('input[name="stream"]:checked')?.value || "no"
   };
 
-  const saved = await saveOrder({
-    ...data,
-    summary: `${data.gems.toLocaleString()} เจม` + (data.rush ? " (เร่ง)" : "") + ` · ${data.totalPrice}฿`
-  });
-  console.log("Order data:", saved);
+  btnSubmitOrder.disabled = true;
+  try {
+    const saved = await saveOrder({
+      service: "farm-gem",
+      gameUsername: userVal,
+      gameUid: uidVal,
+      details
+    }, { slipFile: selectedFarmSlipFile });
 
-  alert(
-    `✅ สั่งซื้อสำเร็จ!\n\n` +
-    `รหัส: ${saved.id}\n` +
-    `จำนวน: ${data.gems.toLocaleString()} เจม\n` +
-    `ยอดชำระ: ${data.totalPrice} ฿${data.rush ? " (งานเร่ง)" : ""}\n\n` +
-    `กรุณาแคปหน้าจอนี้ แล้วส่งมาทาง Facebook: Do Zo Genshin\nเพื่อเริ่มดำเนินการ`
-  );
+    alert(
+      `✅ ส่งคำสั่งซื้อสำเร็จ!\n\n` +
+      `รหัสออเดอร์: ${saved.order.orderNumber}\n` +
+      `จำนวน: ${details.gems.toLocaleString()} เจม\n` +
+      `ยอดชำระ: ${saved.order.totalPrice} ฿\n\n` +
+      `ระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
+    );
+  } catch (error) {
+    await handleOrderError(error);
+  } finally {
+    updateSubmitState();
+  }
 });
 
 // ---------- Characters (หาวัสดุ) ----------
@@ -574,8 +599,8 @@ function bindImageUpload({ inputId, areaId, placeholderId, previewId, errorId, o
   if (!input || !area) return;
 
   function handle(file) {
-    if (!file || !file.type.startsWith("image/")) {
-      onChange(false);
+    if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+      onChange(false, null);
       preview?.classList.add("hidden");
       if (placeholder) placeholder.style.display = "block";
       return;
@@ -587,7 +612,7 @@ function bindImageUpload({ inputId, areaId, placeholderId, previewId, errorId, o
         preview.classList.remove("hidden");
       }
       if (placeholder) placeholder.style.display = "none";
-      onChange(true);
+      onChange(true, file);
       error?.classList.remove("show");
     };
     reader.readAsDataURL(file);
@@ -609,7 +634,7 @@ bindImageUpload({
   placeholderId: "mat-shot-placeholder",
   previewId: "mat-shot-preview",
   errorId: "mat-shot-error",
-  onChange: (ok) => { hasMatShot = ok; updateMaterialSubmitState(); }
+  onChange: (ok, file) => { selectedMatScreenshotFile = file || null; hasMatShot = ok; updateMaterialSubmitState(); }
 });
 
 bindImageUpload({
@@ -618,7 +643,7 @@ bindImageUpload({
   placeholderId: "mat-slip-placeholder",
   previewId: "mat-slip-preview",
   errorId: "mat-slip-error",
-  onChange: (ok) => { hasMatSlip = ok; updateMaterialSubmitState(); }
+  onChange: (ok, file) => { selectedMatSlipFile = file || null; hasMatSlip = ok; updateMaterialSubmitState(); }
 });
 
 function updateMaterialSubmitState() {
@@ -628,54 +653,40 @@ function updateMaterialSubmitState() {
 
 materialForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  if (!selectedCharacter) {
-    alert("กรุณาเลือกตัวละคร");
-    return;
-  }
-  if (!hasMatShot) {
-    document.getElementById("mat-shot-error")?.classList.add("show");
-    return;
-  }
-  if (!hasMatSlip) {
-    document.getElementById("mat-slip-error")?.classList.add("show");
-    return;
-  }
+  if (!selectedCharacter) { alert("กรุณาเลือกตัวละคร"); return; }
+  if (!hasMatShot || !selectedMatScreenshotFile) { document.getElementById("mat-shot-error")?.classList.add("show"); return; }
+  if (!hasMatSlip || !selectedMatSlipFile) { document.getElementById("mat-slip-error")?.classList.add("show"); return; }
 
   const userVal = document.getElementById("mat-user")?.value.trim();
   const uidVal = document.getElementById("mat-id")?.value.trim();
-  const passVal = document.getElementById("mat-pass")?.value;
+  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
 
-  if (!userVal || !uidVal || !passVal) {
-    alert("กรุณากรอกข้อมูลบัญชีให้ครบ (User, ID, Password)");
-    return;
-  }
-
-  const data = {
-    service: "material",
+  const details = {
     character: selectedCharacter,
-    user: userVal,
-    uid: uidVal,
-    pass: passVal,
     note: document.getElementById("mat-note")?.value.trim() || "",
     prohibitions: document.getElementById("mat-prohibitions")?.value.trim() || "",
-    stream: document.querySelector('input[name="mat-stream"]:checked')?.value || "no",
-    hasMaterialScreenshot: true,
-    hasSlip: true
+    stream: document.querySelector('input[name="mat-stream"]:checked')?.value || "no"
   };
 
-  const savedMat = await saveOrder({
-    ...data,
-    summary: `ตัวละคร: ${data.character}`
-  });
-  console.log("Material order:", savedMat);
-
-  alert(
-    `✅ สั่งซื้อหาวัสดุสำเร็จ!\n\n` +
-    `รหัส: ${savedMat.id}\n` +
-    `ตัวละคร: ${data.character}\n\n` +
-    `กรุณาแคปหน้าจอนี้ แล้วส่งมาทาง Facebook: Do Zo Genshin\nเพื่อเริ่มดำเนินการ`
-  );
+  btnSubmitMaterial.disabled = true;
+  try {
+    const savedMat = await saveOrder({
+      service: "material",
+      gameUsername: userVal,
+      gameUid: uidVal,
+      details
+    }, { slipFile: selectedMatSlipFile, attachmentFile: selectedMatScreenshotFile });
+    alert(
+      `✅ ส่งคำสั่งซื้อหาวัสดุสำเร็จ!\n\n` +
+      `รหัสออเดอร์: ${savedMat.order.orderNumber}\n` +
+      `ตัวละคร: ${details.character}\n\n` +
+      `ระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
+    );
+  } catch (error) {
+    await handleOrderError(error);
+  } finally {
+    updateMaterialSubmitState();
+  }
 });
 
 // ---------- Abyss options ----------
@@ -698,6 +709,7 @@ function renderOptionGrid(grid, options, selectedRef, onSelect) {
 function renderAbyssOptions() {
   selectedAbyss = null;
   hasAbyssSlip = false;
+  selectedAbyssSlipFile = null;
   updateAbyssSubmitState();
   renderOptionGrid(abyssPackageGrid, ABYSS_OPTIONS, selectedAbyss, (opt) => {
     selectedAbyss = opt;
@@ -708,6 +720,7 @@ function renderAbyssOptions() {
 function renderExploreOptions() {
   selectedExplore = null;
   hasExploreSlip = false;
+  selectedExploreSlipFile = null;
   updateExploreSubmitState();
   renderOptionGrid(explorePackageGrid, EXPLORE_OPTIONS, selectedExplore, (opt) => {
     selectedExplore = opt;
@@ -728,7 +741,7 @@ bindImageUpload({
   placeholderId: "abyss-slip-placeholder",
   previewId: "abyss-slip-preview",
   errorId: "abyss-slip-error",
-  onChange: (ok) => { hasAbyssSlip = ok; updateAbyssSubmitState(); }
+  onChange: (ok, file) => { selectedAbyssSlipFile = file || null; hasAbyssSlip = ok; updateAbyssSubmitState(); }
 });
 
 bindImageUpload({
@@ -737,77 +750,57 @@ bindImageUpload({
   placeholderId: "explore-slip-placeholder",
   previewId: "explore-slip-preview",
   errorId: "explore-slip-error",
-  onChange: (ok) => { hasExploreSlip = ok; updateExploreSubmitState(); }
+  onChange: (ok, file) => { selectedExploreSlipFile = file || null; hasExploreSlip = ok; updateExploreSubmitState(); }
 });
 
 abyssForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedAbyss) { alert("กรุณาเลือกชั้น / เป้าหมาย"); return; }
-  if (!hasAbyssSlip) {
-    document.getElementById("abyss-slip-error")?.classList.add("show");
-    return;
-  }
+  if (!hasAbyssSlip || !selectedAbyssSlipFile) { document.getElementById("abyss-slip-error")?.classList.add("show"); return; }
   const userVal = document.getElementById("abyss-user")?.value.trim();
   const uidVal = document.getElementById("abyss-id")?.value.trim();
-  const passVal = document.getElementById("abyss-pass")?.value;
-  if (!userVal || !uidVal || !passVal) {
-    alert("กรุณากรอกข้อมูลบัญชีให้ครบ");
-    return;
-  }
-  const data = {
-    service: "abyss",
+  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+
+  const details = {
     package: selectedAbyss.label,
     detail: document.getElementById("abyss-detail")?.value.trim() || "",
-    user: userVal,
-    uid: uidVal,
-    pass: passVal,
     prohibitions: document.getElementById("abyss-prohibitions")?.value.trim() || "",
     stream: document.querySelector('input[name="abyss-stream"]:checked')?.value || "no"
   };
-  const savedAbyss = await saveOrder({
-    ...data,
-    summary: data.package + (data.detail ? ` · ${data.detail}` : "")
-  });
-  console.log("Abyss order:", savedAbyss);
-  alert(
-    `✅ สั่งซื้อเคลียร์ Abyss สำเร็จ!\n\nรหัส: ${savedAbyss.id}\nเป้าหมาย: ${data.package}\n\n` +
-    `กรุณาแคปหน้าจอนี้ แล้วส่งมาทาง Facebook: Do Zo Genshin`
-  );
+  btnSubmitAbyss.disabled = true;
+  try {
+    const saved = await saveOrder({ service: "abyss", gameUsername: userVal, gameUid: uidVal, details }, { slipFile: selectedAbyssSlipFile });
+    alert(`✅ ส่งคำสั่งซื้อเคลียร์ Abyss สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเป้าหมาย: ${details.package}\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+  } catch (error) {
+    await handleOrderError(error);
+  } finally {
+    updateAbyssSubmitState();
+  }
 });
 
 exploreForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedExplore) { alert("กรุณาเลือกพื้นที่ / เป้าหมาย"); return; }
-  if (!hasExploreSlip) {
-    document.getElementById("explore-slip-error")?.classList.add("show");
-    return;
-  }
+  if (!hasExploreSlip || !selectedExploreSlipFile) { document.getElementById("explore-slip-error")?.classList.add("show"); return; }
   const userVal = document.getElementById("explore-user")?.value.trim();
   const uidVal = document.getElementById("explore-id")?.value.trim();
-  const passVal = document.getElementById("explore-pass")?.value;
-  if (!userVal || !uidVal || !passVal) {
-    alert("กรุณากรอกข้อมูลบัญชีให้ครบ");
-    return;
-  }
-  const data = {
-    service: "explore",
+  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+
+  const details = {
     package: selectedExplore.label,
     detail: document.getElementById("explore-detail")?.value.trim() || "",
-    user: userVal,
-    uid: uidVal,
-    pass: passVal,
     prohibitions: document.getElementById("explore-prohibitions")?.value.trim() || "",
     stream: document.querySelector('input[name="explore-stream"]:checked')?.value || "no"
   };
-  const savedExplore = await saveOrder({
-    ...data,
-    summary: data.package + (data.detail ? ` · ${data.detail}` : "")
-  });
-  console.log("Explore order:", savedExplore);
-  alert(
-    `✅ สั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัส: ${savedExplore.id}\nพื้นที่: ${data.package}\n\n` +
-    `กรุณาแคปหน้าจอนี้ แล้วส่งมาทาง Facebook: Do Zo Genshin`
-  );
+  btnSubmitExplore.disabled = true;
+  try {
+    const saved = await saveOrder({ service: "explore", gameUsername: userVal, gameUid: uidVal, details }, { slipFile: selectedExploreSlipFile });
+    alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nพื้นที่: ${details.package}\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+  } catch (error) {
+    await handleOrderError(error);
+  } finally {
+    updateExploreSubmitState();
+  }
 });
 
 // ---------- Admin panels ----------
@@ -850,15 +843,16 @@ async function renderAdminOrders() {
 
   tbody.innerHTML = orders.map(o => {
     const st = o.status || "pending";
+    const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
     return `<tr>
-      <td>${formatTime(o.createdAt)}</td>
-      <td>${SERVICE_LABEL[o.service] || o.service}</td>
-      <td title="${(o.summary || "").replace(/"/g, "&quot;")}">${o.summary || "-"}</td>
-      <td>${o.customerEmail || "-"}</td>
-      <td>${o.uid || "-"}</td>
-      <td><span class="status-badge status-${st}">${STATUS_LABEL[st] || st}</span></td>
+      <td>${escapeHtml(formatTime(o.createdAt))}</td>
+      <td>${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</td>
+      <td>${escapeHtml(o.summary || "-")}<br><small>${files}</small></td>
+      <td>${escapeHtml(o.customerEmail || "-")}</td>
+      <td>${escapeHtml(o.uid || "-")}</td>
+      <td><span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span></td>
       <td>
-        <select class="btn-status" data-order-id="${o.id}">
+        <select class="btn-status" data-order-id="${escapeHtml(o.id)}">
           <option value="pending" ${st === "pending" ? "selected" : ""}>รอดำเนินการ</option>
           <option value="doing" ${st === "doing" ? "selected" : ""}>กำลังทำ</option>
           <option value="done" ${st === "done" ? "selected" : ""}>เสร็จแล้ว</option>
@@ -870,11 +864,43 @@ async function renderAdminOrders() {
 
   tbody.querySelectorAll("select[data-order-id]").forEach(sel => {
     sel.addEventListener("change", async () => {
-      await updateOrderStatus(sel.dataset.orderId, sel.value);
-      await renderAdminOrders();
-      await renderAdminCustomers();
+      try {
+        await updateOrderStatus(sel.dataset.orderId, sel.value);
+        await renderAdminOrders();
+        await renderAdminCustomers();
+      } catch (error) {
+        alert(error.message || "อัปเดตสถานะไม่สำเร็จ");
+      }
     });
   });
+}
+
+async function renderCustomerHistory() {
+  const container = document.getElementById("customer-history-list");
+  if (!container) return;
+  try {
+    const orders = await loadOrders();
+    if (!orders.length) {
+      container.innerHTML = `<div class="empty-state glass"><p>ยังไม่มีประวัติการสั่งซื้อ</p><button class="btn-service" data-goto="home">ไปเลือกบริการ</button></div>`;
+      container.querySelector("[data-goto]")?.addEventListener("click", () => showView("home"));
+      return;
+    }
+    container.innerHTML = orders.map(o => {
+      const status = STATUS_LABEL[o.status] || o.status || "รอดำเนินการ";
+      const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
+      return `<article class="history-card glass">
+        <div class="history-card-head">
+          <h3>${escapeHtml(SERVICE_LABEL[o.service] || o.service)} <span class="order-number">#${escapeHtml(o.orderNumber)}</span></h3>
+          <span class="status-badge status-${escapeHtml(o.status || "pending")}">${escapeHtml(status)}</span>
+        </div>
+        <p>${escapeHtml(o.summary || "-")}</p>
+        <div class="history-meta"><span>UID: ${escapeHtml(o.uid || "-")}</span><span>${escapeHtml(formatTime(o.createdAt))}</span></div>
+        ${files ? `<div class="history-files">${files}</div>` : ""}
+      </article>`;
+    }).join("");
+  } catch (error) {
+    container.innerHTML = `<div class="empty-state glass"><p>${escapeHtml(error.message || "โหลดประวัติไม่สำเร็จ")}</p></div>`;
+  }
 }
 
 async function renderAdminCustomers() {
@@ -900,7 +926,7 @@ async function renderAdminCustomers() {
   }
   tbody.innerHTML = list.map(c => `
     <tr>
-      <td>${c.key}</td>
+      <td>${escapeHtml(c.key)}</td>
       <td>${c.count}</td>
       <td>${formatTime(c.last)}</td>
     </tr>
@@ -912,12 +938,7 @@ async function renderAdminTeam() {
   const countEl = document.getElementById("team-count");
   if (!grid) return;
 
-  let members = TEAM_MEMBERS;
-  if (window.DozoAPI) {
-    const fromApi = await DozoAPI.listTeam();
-    if (fromApi && fromApi.length) members = fromApi;
-  }
-
+  const members = TEAM_MEMBERS;
   if (countEl) countEl.textContent = members.length + " คน";
   grid.innerHTML = members.map(m => `
     <div class="team-card glass">

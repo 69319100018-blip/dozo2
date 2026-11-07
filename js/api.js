@@ -1,0 +1,83 @@
+/* Browser-side API client. All requests stay on this site's own domain. */
+(() => {
+  "use strict";
+
+  async function request(path, options = {}) {
+    const response = await fetch(path, {
+      credentials: "same-origin",
+      ...options,
+      headers: {
+        ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+        ...(options.headers || {}),
+      },
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    const data = contentType.includes("application/json")
+      ? await response.json()
+      : { error: await response.text() };
+
+    if (!response.ok) {
+      throw new Error(data.error || `Request failed (${response.status})`);
+    }
+    return data;
+  }
+
+  window.DozoAPI = {
+    async me() {
+      const result = await request("/api/auth", { method: "GET" });
+      return result.user || null;
+    },
+
+    login({ email, password }) {
+      return request("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({ action: "login", email, password }),
+      });
+    },
+
+    register({ email, password, displayName }) {
+      return request("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({ action: "register", email, password, displayName }),
+      });
+    },
+
+    logout() {
+      return request("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({ action: "logout" }),
+      });
+    },
+
+    async listOrders() {
+      const result = await request("/api/orders", { method: "GET" });
+      return result.orders || [];
+    },
+
+    createOrder(order) {
+      return request("/api/orders", {
+        method: "POST",
+        body: JSON.stringify(order),
+      });
+    },
+
+    updateOrderStatus(id, status) {
+      return request(`/api/orders?id=${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+
+    async uploadFile(file, purpose) {
+      const form = new FormData();
+      form.append("file", file, file.name || "upload");
+      form.append("purpose", purpose);
+      return request("/api/upload", { method: "POST", body: form });
+    },
+
+    fileUrl(pathname) {
+      return `/api/upload?pathname=${encodeURIComponent(pathname)}`;
+    },
+  };
+})();

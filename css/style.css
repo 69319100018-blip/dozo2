@@ -951,3 +951,19 @@ html, body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+/* ========== DATABASE / ORDER HISTORY ========== */
+.history-list { display: grid; gap: 1rem; }
+.history-card { border-radius: var(--radius); padding: 1.2rem; }
+.history-card-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.55rem; }
+.history-card h3 { font-size:1rem; }
+.history-meta { display:flex; gap:.75rem; flex-wrap:wrap; color:var(--text-muted); font-size:.82rem; margin-top:.6rem; }
+.history-files { display:flex; gap:.85rem; flex-wrap:wrap; margin-top:.7rem; }
+.history-files a { color:var(--primary); text-decoration:none; font-size:.85rem; }
+.history-files a:hover { text-decoration:underline; }
+.order-number { color:var(--gold); font-weight:700; }
+.auth-note { color:var(--text-muted); font-size:.78rem; margin-top:.7rem; text-align:center; }
+
+/* Generic utility class used by the login/register toggle and loading UI. */
+.hidden { display: none !important; }

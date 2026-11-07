@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dozo Genshin | รับงานฟาร์ม & วัสดุ</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 </head>
 <body>
   <!-- ========== LOADING / INTRO SCREEN ========== -->
@@ -43,9 +41,17 @@
           <label for="email">อีเมล</label>
           <input type="email" id="email" placeholder="your@email.com" required autocomplete="email" />
         </div>
+        <div class="form-group hidden" id="register-name-group">
+          <label for="register-name">ชื่อที่ใช้แสดง</label>
+          <input type="text" id="register-name" placeholder="ชื่อของคุณ" maxlength="60" autocomplete="name" />
+        </div>
         <div class="form-group">
           <label for="password">รหัสผ่าน</label>
-          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" />
+          <input type="password" id="password" placeholder="อย่างน้อย 8 ตัวอักษร" required minlength="8" autocomplete="current-password" />
+        </div>
+        <div class="form-group hidden" id="confirm-password-group">
+          <label for="confirm-password">ยืนยันรหัสผ่าน</label>
+          <input type="password" id="confirm-password" placeholder="กรอกรหัสผ่านอีกครั้ง" minlength="8" autocomplete="new-password" />
         </div>
         <button type="submit" class="btn-primary" id="login-btn">
           <span class="btn-text">เข้าสู่ระบบ</span>
@@ -53,7 +59,7 @@
         </button>
       </form>
       <p class="login-footer">
-        ยังไม่มีบัญชี? <a href="#" id="register-link">สมัครสมาชิก</a>
+        <span id="auth-footer-text">ยังไม่มีบัญชี?</span> <a href="#" id="register-link">สมัครสมาชิก</a>
       </p>
       <div id="auth-error" class="error-message hidden"></div>
     </div>
@@ -153,11 +159,7 @@
                 <input type="text" id="game-id" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <div class="form-group">
-              <label for="game-pass">Password</label>
-              <input type="password" id="game-pass" placeholder="รหัสผ่านบัญชี" required />
-            </div>
-            <p class="hint warn">* ไม่รับไอดีเมมพาส (Memory Password)</p>
+            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
           </section>
 
           <!-- ข้อห้าม -->
@@ -197,7 +199,7 @@
             <div class="form-group">
               <label for="slip-upload">อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
               <div class="upload-area" id="upload-area">
-                <input type="file" id="slip-upload" accept="image/*" />
+                <input type="file" id="slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
                 <div class="upload-placeholder" id="upload-placeholder">
                   <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
                   <small>รองรับ JPG, PNG</small>
@@ -257,11 +259,7 @@
                 <input type="text" id="mat-id" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <div class="form-group">
-              <label for="mat-pass">Password</label>
-              <input type="password" id="mat-pass" placeholder="รหัสผ่านบัญชี" required />
-            </div>
-            <p class="hint warn">* ไม่รับไอดีเมมพาส (Memory Password)</p>
+            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
           </section>
 
           <!-- 3. วัสดุที่ต้องการ -->
@@ -275,7 +273,7 @@
             <div class="form-group">
               <label>แคปหน้าตาวัสดุ <span class="required">*จำเป็น</span></label>
               <div class="upload-area" id="mat-shot-area">
-                <input type="file" id="mat-shot-upload" accept="image/*" />
+                <input type="file" id="mat-shot-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
                 <div class="upload-placeholder" id="mat-shot-placeholder">
                   <span>📸 คลิกหรือลากแคปหน้าตาวัสดุมาวาง</span>
                   <small>รองรับ JPG, PNG</small>
@@ -316,7 +314,7 @@
             <div class="form-group">
               <label for="mat-slip-upload">อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
               <div class="upload-area" id="mat-slip-area">
-                <input type="file" id="mat-slip-upload" accept="image/*" />
+                <input type="file" id="mat-slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
                 <div class="upload-placeholder" id="mat-slip-placeholder">
                   <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
                   <small>รองรับ JPG, PNG</small>
@@ -373,11 +371,7 @@
                 <input type="text" id="abyss-id" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <div class="form-group">
-              <label for="abyss-pass">Password</label>
-              <input type="password" id="abyss-pass" placeholder="รหัสผ่านบัญชี" required />
-            </div>
-            <p class="hint warn">* ไม่รับไอดีเมมพาส (Memory Password)</p>
+            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
           </section>
 
           <section class="form-section glass">
@@ -408,7 +402,7 @@
             <div class="form-group">
               <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
               <div class="upload-area" id="abyss-slip-area">
-                <input type="file" id="abyss-slip-upload" accept="image/*" />
+                <input type="file" id="abyss-slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
                 <div class="upload-placeholder" id="abyss-slip-placeholder">
                   <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
                   <small>รองรับ JPG, PNG</small>
@@ -464,11 +458,7 @@
                 <input type="text" id="explore-id" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <div class="form-group">
-              <label for="explore-pass">Password</label>
-              <input type="password" id="explore-pass" placeholder="รหัสผ่านบัญชี" required />
-            </div>
-            <p class="hint warn">* ไม่รับไอดีเมมพาส (Memory Password)</p>
+            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
           </section>
 
           <section class="form-section glass">
@@ -499,7 +489,7 @@
             <div class="form-group">
               <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
               <div class="upload-area" id="explore-slip-area">
-                <input type="file" id="explore-slip-upload" accept="image/*" />
+                <input type="file" id="explore-slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
                 <div class="upload-placeholder" id="explore-slip-placeholder">
                   <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
                   <small>รองรับ JPG, PNG</small>
@@ -532,9 +522,10 @@
           <h2>ประวัติออเดอร์</h2>
           <p>รายการที่คุณเคยสั่งไว้</p>
         </section>
-        <div class="empty-state glass">
-          <p>ยังไม่มีประวัติการสั่งซื้อ</p>
-          <button class="btn-service" data-goto="home">ไปเลือกบริการ</button>
+        <div id="customer-history-list" class="history-list">
+          <div class="empty-state glass">
+            <p>กำลังโหลดประวัติการสั่งซื้อ...</p>
+          </div>
         </div>
       </div>
 
@@ -621,10 +612,7 @@
     </main>
   </div>
 
-  <!-- API บน Vercel (Neon) — ตอน dev local เปลี่ยนเป็น http://localhost:3001 ได้ -->
-  <script>
-    window.DOZO_API_BASE = window.DOZO_API_BASE || "https://dozo-genshin-server-fjri.vercel.app";
-  </script>
+  <!-- API ภายในโปรเจกต์ Vercel นี้ -->
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
