@@ -603,8 +603,33 @@
 
         <!-- Team -->
         <div class="admin-panel" id="admin-panel-team">
+          <section class="team-manager glass">
+            <h3>เพิ่มสมาชิกเข้าทีม</h3>
+            <p class="hint">เลือกบัญชีที่สมัครสมาชิกไว้แล้ว ระบบจะเปลี่ยน role จาก customer เป็น staff</p>
+            <form id="team-add-form">
+              <div class="team-form-grid">
+                <div class="form-group">
+                  <label for="team-user-select">บัญชีสมาชิก</label>
+                  <select id="team-user-select" required>
+                    <option value="">กำลังโหลดสมาชิก...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="team-title">ตำแหน่งในทีม</label>
+                  <input id="team-title" type="text" maxlength="80" placeholder="เช่น ทีมฟาร์มเจม" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="team-description">รายละเอียดงาน (ไม่บังคับ)</label>
+                <input id="team-description" type="text" maxlength="180" placeholder="เช่น รับงาน Primogem / Mora" />
+              </div>
+              <button type="submit" class="btn-primary team-add-button" id="team-add-submit">เพิ่มเป็นลูกทีม</button>
+              <p class="hint" id="team-management-message" aria-live="polite"></p>
+            </form>
+          </section>
           <div class="admin-toolbar">
             <span id="team-count">0 คน</span>
+            <button type="button" class="btn-sm" id="btn-refresh-team">รีเฟรชรายชื่อลูกทีม</button>
           </div>
           <div class="team-grid" id="team-grid"></div>
         </div>

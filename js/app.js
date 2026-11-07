@@ -97,14 +97,6 @@ let hasExploreSlip = false;
 let currentUser = null;
 let isAdmin = false;
 
-const TEAM_MEMBERS = [
-  { name: "Dozo", role: "เจ้าของร้าน", meta: "จัดการออเดอร์ทั้งหมด" },
-  { name: "Aoi", role: "ทีมฟาร์มเจม", meta: "รับงาน Primogem / Mora" },
-  { name: "Rin", role: "ทีมวัสดุ", meta: "หาวัสดุเลื่อนขั้น" },
-  { name: "Kai", role: "ทีม Abyss", meta: "เคลียร์ Spiral Abyss" },
-  { name: "Mika", role: "ทีมสำรวจ", meta: "เปิดแผนที่ / เก็บของ" }
-];
-
 // ---------- Neon API client ----------
 async function loadOrders() {
   return DozoAPI.listOrders();
@@ -936,18 +928,99 @@ async function renderAdminCustomers() {
 async function renderAdminTeam() {
   const grid = document.getElementById("team-grid");
   const countEl = document.getElementById("team-count");
+  const memberSelect = document.getElementById("team-user-select");
+  const addButton = document.getElementById("team-add-submit");
   if (!grid) return;
 
-  const members = TEAM_MEMBERS;
-  if (countEl) countEl.textContent = members.length + " คน";
-  grid.innerHTML = members.map(m => `
-    <div class="team-card glass">
-      <div class="team-name">${m.name}</div>
-      <div class="team-role">${m.role}</div>
-      <div class="team-meta">${m.meta || ""}</div>
-    </div>
-  `).join("");
+  grid.innerHTML = `<div class="empty-state glass"><p>กำลังโหลดรายชื่อลูกทีม...</p></div>`;
+  try {
+    const result = await DozoAPI.listTeam();
+    const members = Array.isArray(result.staff) ? result.staff : [];
+    const candidates = Array.isArray(result.candidates) ? result.candidates : [];
+
+    if (countEl) countEl.textContent = `${members.length} คน`;
+
+    if (memberSelect) {
+      const previousValue = memberSelect.value;
+      memberSelect.innerHTML = candidates.length
+        ? `<option value="">เลือกสมาชิกที่สมัครแล้ว</option>` + candidates.map(candidate =>
+            `<option value="${escapeHtml(candidate.id)}">${escapeHtml(candidate.displayName)} — ${escapeHtml(candidate.email)}</option>`
+          ).join("")
+        : `<option value="">ไม่มีบัญชีลูกค้าที่สามารถเพิ่มเป็นลูกทีม</option>`;
+      if (previousValue && candidates.some(candidate => candidate.id === previousValue)) {
+        memberSelect.value = previousValue;
+      }
+    }
+    if (addButton) addButton.disabled = candidates.length === 0;
+
+    if (!members.length) {
+      grid.innerHTML = `<div class="empty-state glass"><p>ยังไม่มีลูกทีมในระบบ</p><p>เลือกสมาชิกที่สมัครไว้แล้วจากด้านบน แล้วเพิ่ม role เป็น staff ได้เลย</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = members.map(member => `
+      <article class="team-card glass">
+        <div class="team-name">${escapeHtml(member.displayName || "สมาชิก")}</div>
+        <div class="team-role">${escapeHtml(member.staffTitle || "ทีมงาน")}</div>
+        <div class="team-meta">${escapeHtml(member.staffDescription || "ไม่มีรายละเอียดเพิ่มเติม")}</div>
+        <div class="team-email">${escapeHtml(member.email || "")}</div>
+        <button type="button" class="btn-team-remove" data-remove-staff="${escapeHtml(member.id)}">นำออกจากทีม</button>
+      </article>
+    `).join("");
+
+    grid.querySelectorAll("[data-remove-staff]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const memberId = button.dataset.removeStaff;
+        const member = members.find(item => item.id === memberId);
+        if (!member || !confirm(`ต้องการนำ ${member.displayName} ออกจากทีมใช่หรือไม่?`)) return;
+        button.disabled = true;
+        try {
+          await DozoAPI.updateTeamMember({ userId: memberId, role: "customer" });
+          await renderAdminTeam();
+        } catch (error) {
+          alert(error.message || "นำสมาชิกออกจากทีมไม่สำเร็จ");
+          button.disabled = false;
+        }
+      });
+    });
+  } catch (error) {
+    if (countEl) countEl.textContent = "โหลดไม่สำเร็จ";
+    grid.innerHTML = `<div class="empty-state glass"><p>${escapeHtml(error.message || "โหลดรายชื่อลูกทีมไม่สำเร็จ")}</p></div>`;
+  }
 }
+
+const teamAddForm = document.getElementById("team-add-form");
+teamAddForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const memberSelect = document.getElementById("team-user-select");
+  const titleInput = document.getElementById("team-title");
+  const descriptionInput = document.getElementById("team-description");
+  const submitButton = document.getElementById("team-add-submit");
+  const message = document.getElementById("team-management-message");
+  const userId = memberSelect?.value;
+  if (!userId) {
+    if (message) message.textContent = "กรุณาเลือกบัญชีสมาชิกก่อน";
+    return;
+  }
+
+  submitButton.disabled = true;
+  if (message) message.textContent = "กำลังเพิ่มสมาชิกเข้าทีม...";
+  try {
+    await DozoAPI.updateTeamMember({
+      userId,
+      role: "staff",
+      staffTitle: titleInput?.value.trim() || "ทีมงาน",
+      staffDescription: descriptionInput?.value.trim() || ""
+    });
+    teamAddForm.reset();
+    if (message) message.textContent = "เพิ่มสมาชิกเป็นลูกทีมเรียบร้อยแล้ว";
+    await renderAdminTeam();
+  } catch (error) {
+    if (message) message.textContent = error.message || "เพิ่มลูกทีมไม่สำเร็จ";
+  } finally {
+    submitButton.disabled = false;
+  }
+});
 
 async function renderAdminAll() {
   await renderAdminOrders();
@@ -969,6 +1042,8 @@ document.getElementById("btn-refresh-orders")?.addEventListener("click", async (
   await renderAdminOrders();
   await renderAdminCustomers();
 });
+
+document.getElementById("btn-refresh-team")?.addEventListener("click", renderAdminTeam);
 
 // ---------- Start ----------
 window.addEventListener("DOMContentLoaded", () => {

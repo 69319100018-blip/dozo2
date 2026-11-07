@@ -967,3 +967,62 @@ html, body {
 
 /* Generic utility class used by the login/register toggle and loading UI. */
 .hidden { display: none !important; }
+
+
+/* ========== ADMIN TEAM MANAGEMENT ========== */
+.team-manager {
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+.team-manager h3 {
+  color: var(--primary);
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+.team-manager > p { margin-bottom: 1rem; }
+.team-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.team-manager select,
+.team-manager input {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+}
+.team-manager select:focus,
+.team-manager input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.team-manager select option { background: #132238; color: var(--text); }
+.team-add-button { max-width: 260px; margin-bottom: 0.7rem; }
+.team-email {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  margin-top: 0.55rem;
+}
+.btn-team-remove {
+  margin-top: 0.9rem;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid rgba(231, 111, 81, 0.4);
+  background: rgba(231, 111, 81, 0.08);
+  color: #ffb4a2;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+}
+.btn-team-remove:hover { background: rgba(231, 111, 81, 0.16); }
+.btn-team-remove:disabled { opacity: 0.5; cursor: wait; }
+@media (max-width: 700px) {
+  .team-form-grid { grid-template-columns: 1fr; gap: 0; }
+  .team-add-button { max-width: none; }
+}

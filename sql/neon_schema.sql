@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS users (
   display_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'customer'
-    CHECK (role IN ('customer', 'admin')),
+    CHECK (role IN ('customer', 'staff', 'admin')),
+  staff_title TEXT,
+  staff_description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

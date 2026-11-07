@@ -69,6 +69,17 @@
       });
     },
 
+    listTeam() {
+      return request("/api/team", { method: "GET" });
+    },
+
+    updateTeamMember(payload) {
+      return request("/api/team", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+    },
+
     async uploadFile(file, purpose) {
       const form = new FormData();
       form.append("file", file, file.name || "upload");
