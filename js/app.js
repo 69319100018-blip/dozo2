@@ -71,11 +71,11 @@ const buildCharSelectedHint = document.getElementById("build-char-selected-hint"
 const buildGoalGrid = document.getElementById("build-goal-grid");
 
 const MATERIAL_TYPES = [
-  { id: "ascension", label: "วัสดุเลื่อนขั้นตัวละคร", sub: "Ascension" },
-  { id: "talent", label: "วัสดุ Talent / หนังสือ", sub: "สกิลตัวละคร" },
+  { id: "ascension", label: "เลื่อนขั้นตัวละคร", sub: "Ascension mats" },
+  { id: "talent", label: "Talent / หนังสือ", sub: "สกิลตัวละคร" },
   { id: "weapon", label: "วัสดุอาวุธ", sub: "เลื่อนขั้นอาวุธ" },
-  { id: "boss", label: "ดรอปบอส / รายสัปดาห์", sub: "Boss / Weekly" },
-  { id: "local", label: "ของท้องถิ่น / ฟาร์มโลก", sub: "Local specialty" },
+  { id: "boss", label: "บอส / รายสัปดาห์", sub: "Boss · Weekly" },
+  { id: "local", label: "ของท้องถิ่น", sub: "ฟาร์มโลก" },
   { id: "custom", label: "กำหนดเอง", sub: "ระบุในรายละเอียด" }
 ];
 
@@ -639,12 +639,13 @@ function renderMaterialTypes() {
   matTypeGrid.innerHTML = "";
   selectedMaterialType = null;
   MATERIAL_TYPES.forEach(opt => {
-    const el = document.createElement("div");
-    el.className = "package-card";
-    el.innerHTML = `<span class="gems">${opt.label}</span><span class="price">${opt.sub}</span>`;
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "package-item option-btn";
+    el.innerHTML = `<span class="opt-title">${opt.label}</span><span class="opt-sub">${opt.sub}</span>`;
     el.addEventListener("click", () => {
       selectedMaterialType = opt;
-      matTypeGrid.querySelectorAll(".package-card").forEach(c => c.classList.remove("selected"));
+      matTypeGrid.querySelectorAll(".package-item").forEach(c => c.classList.remove("selected"));
       el.classList.add("selected");
       updateMaterialSubmitState();
     });
@@ -793,12 +794,13 @@ function renderBuildGoals() {
   buildGoalGrid.innerHTML = "";
   selectedBuildGoal = null;
   BUILD_GOALS.forEach(opt => {
-    const el = document.createElement("div");
-    el.className = "package-card";
-    el.innerHTML = `<span class="gems">${opt.label}</span><span class="price">${opt.sub}</span>`;
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "package-item option-btn";
+    el.innerHTML = `<span class="opt-title">${opt.label}</span><span class="opt-sub">${opt.sub}</span>`;
     el.addEventListener("click", () => {
       selectedBuildGoal = opt;
-      buildGoalGrid.querySelectorAll(".package-card").forEach(c => c.classList.remove("selected"));
+      buildGoalGrid.querySelectorAll(".package-item").forEach(c => c.classList.remove("selected"));
       el.classList.add("selected");
       updateBuildSubmitState();
     });

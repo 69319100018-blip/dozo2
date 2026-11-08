@@ -520,37 +520,76 @@ html, body {
   margin-bottom: 1.2rem;
 }
 
+/* กริดตัวเลือกข้อความยาว (หาวัสดุ / ปั้นตัวละคร) */
+#mat-type-grid,
+#build-goal-grid {
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 0.75rem;
+}
+
 .package-item {
-  padding: 0.85rem 0.6rem;
+  padding: 0.85rem 0.7rem;
   background: rgba(0, 0, 0, 0.25);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 4.2rem;
+  line-height: 1.25;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .package-item:hover {
-  border-color: rgba(78, 205, 196, 0.4);
-  background: rgba(78, 205, 196, 0.08);
+  border-color: rgba(78, 205, 196, 0.45);
+  background: rgba(78, 205, 196, 0.1);
+  transform: translateY(-1px);
 }
 
 .package-item.selected {
   border-color: var(--primary);
-  background: rgba(78, 205, 196, 0.15);
-  box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.2);
+  background: rgba(78, 205, 196, 0.18);
+  box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.22);
 }
 
-.package-item .gems {
-  font-size: 1rem;
+.package-item .gems,
+.package-item .opt-title {
+  font-size: 0.92rem;
   font-weight: 600;
   display: block;
-  margin-bottom: 0.2rem;
+  color: var(--text);
+  word-break: break-word;
 }
 
-.package-item .price {
-  font-size: 0.85rem;
+.package-item .price,
+.package-item .opt-sub {
+  font-size: 0.78rem;
   color: var(--gold);
+  display: block;
+  opacity: 0.95;
+}
+
+.package-item.option-btn {
+  min-height: 4.6rem;
+  padding: 0.95rem 0.85rem;
+}
+
+.package-item.option-btn .opt-title {
+  font-size: 0.9rem;
+}
+
+.package-item.option-btn .opt-sub {
+  margin-top: 0.15rem;
+  color: var(--text-muted);
 }
 
 /* Character grid (หาวัสดุ) */
