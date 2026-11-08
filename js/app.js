@@ -36,6 +36,7 @@ const views = {
   home: document.getElementById("view-home"),
   orderFarm: document.getElementById("view-order-farm"),
   orderMaterial: document.getElementById("view-order-material"),
+  orderBuild: document.getElementById("view-order-build"),
   orderAbyss: document.getElementById("view-order-abyss"),
   orderExplore: document.getElementById("view-order-explore"),
   history: document.getElementById("view-history"),
@@ -57,11 +58,34 @@ const slipError = document.getElementById("slip-error");
 const btnSubmitOrder = document.getElementById("btn-submit-order");
 
 // Material form
-const charGrid = document.getElementById("char-grid");
-const charSearch = document.getElementById("char-search");
-const charSelectedHint = document.getElementById("char-selected-hint");
 const materialForm = document.getElementById("material-form");
 const btnSubmitMaterial = document.getElementById("btn-submit-material");
+const matTypeGrid = document.getElementById("mat-type-grid");
+
+// Build character form
+const buildForm = document.getElementById("build-form");
+const btnSubmitBuild = document.getElementById("btn-submit-build");
+const buildCharGrid = document.getElementById("build-char-grid");
+const buildCharSearch = document.getElementById("build-char-search");
+const buildCharSelectedHint = document.getElementById("build-char-selected-hint");
+const buildGoalGrid = document.getElementById("build-goal-grid");
+
+const MATERIAL_TYPES = [
+  { id: "ascension", label: "วัสดุเลื่อนขั้นตัวละคร", sub: "Ascension" },
+  { id: "talent", label: "วัสดุ Talent / หนังสือ", sub: "สกิลตัวละคร" },
+  { id: "weapon", label: "วัสดุอาวุธ", sub: "เลื่อนขั้นอาวุธ" },
+  { id: "boss", label: "ดรอปบอส / รายสัปดาห์", sub: "Boss / Weekly" },
+  { id: "local", label: "ของท้องถิ่น / ฟาร์มโลก", sub: "Local specialty" },
+  { id: "custom", label: "กำหนดเอง", sub: "ระบุในรายละเอียด" }
+];
+
+const BUILD_GOALS = [
+  { id: "level-90", label: "ปั้นถึง Lv.90", sub: "เลเวลเต็ม" },
+  { id: "ascension-only", label: "เลื่อนขั้นอย่างเดียว", sub: "Ascension" },
+  { id: "talent-focus", label: "เน้น Talent", sub: "อัพสกิล" },
+  { id: "full-build", label: "ปั้นครบชุด", sub: "เลเวล + Talent" },
+  { id: "custom", label: "กำหนดเอง", sub: "ระบุรายละเอียด" }
+];
 
 // Abyss / Explore
 const abyssForm = document.getElementById("abyss-form");
@@ -194,12 +218,19 @@ let hasSlip = false;
 let selectedFarmSlipFile = null;
 let selectedMatScreenshotFile = null;
 let selectedMatSlipFile = null;
+let selectedBuildScreenshotFile = null;
+let selectedBuildSlipFile = null;
 let selectedAbyssSlipFile = null;
 let selectedExploreSlipFile = null;
 
-let selectedCharacter = null;
+let selectedMaterialType = null;
 let hasMatShot = false;
 let hasMatSlip = false;
+
+let selectedBuildCharacter = null;
+let selectedBuildGoal = null;
+let hasBuildShot = false;
+let hasBuildSlip = false;
 
 // ---------- Particles ----------
 function createParticles(count = 18) {
@@ -416,6 +447,7 @@ function showView(name) {
     staff: views.staff,
     "order-farm": views.orderFarm,
     "order-material": views.orderMaterial,
+    "order-build": views.orderBuild,
     "order-abyss": views.orderAbyss,
     "order-explore": views.orderExplore
   };
@@ -436,6 +468,7 @@ document.querySelectorAll(".nav-item").forEach(btn => {
 
 document.getElementById("btn-back-home")?.addEventListener("click", () => showView("home"));
 document.getElementById("btn-back-home-mat")?.addEventListener("click", () => showView("home"));
+document.getElementById("btn-back-home-build")?.addEventListener("click", () => showView("home"));
 document.getElementById("btn-back-home-abyss")?.addEventListener("click", () => showView("home"));
 document.getElementById("btn-back-home-explore")?.addEventListener("click", () => showView("home"));
 
@@ -453,7 +486,11 @@ document.querySelectorAll(".service-card").forEach(card => {
       renderPackages();
     } else if (service === "material") {
       showView("order-material");
-      renderCharacters();
+      renderMaterialTypes();
+    } else if (service === "build-char") {
+      showView("order-build");
+      renderBuildCharacters();
+      renderBuildGoals();
     } else if (service === "abyss") {
       showView("order-abyss");
       renderAbyssOptions();
@@ -596,38 +633,25 @@ farmForm?.addEventListener("submit", async (e) => {
   }
 });
 
-// ---------- Characters (หาวัสดุ) ----------
-function renderCharacters(filter = "") {
-  if (!charGrid) return;
-  charGrid.innerHTML = "";
-  const q = filter.trim().toLowerCase();
-  const list = q
-    ? CHARACTERS.filter(c => c.toLowerCase().includes(q))
-    : CHARACTERS;
-
-  if (!list.length) {
-    charGrid.innerHTML = `<p class="hint" style="padding:0.8rem;grid-column:1/-1">ไม่พบตัวละคร</p>`;
-    return;
-  }
-
-  list.forEach(name => {
+// ---------- หาวัสดุ ----------
+function renderMaterialTypes() {
+  if (!matTypeGrid) return;
+  matTypeGrid.innerHTML = "";
+  selectedMaterialType = null;
+  MATERIAL_TYPES.forEach(opt => {
     const el = document.createElement("div");
-    el.className = "char-item" + (selectedCharacter === name ? " selected" : "");
-    el.textContent = name;
+    el.className = "package-card";
+    el.innerHTML = `<span class="gems">${opt.label}</span><span class="price">${opt.sub}</span>`;
     el.addEventListener("click", () => {
-      selectedCharacter = name;
-      document.querySelectorAll(".char-item").forEach(c => c.classList.remove("selected"));
+      selectedMaterialType = opt;
+      matTypeGrid.querySelectorAll(".package-card").forEach(c => c.classList.remove("selected"));
       el.classList.add("selected");
-      if (charSelectedHint) charSelectedHint.textContent = "เลือกแล้ว: " + name;
       updateMaterialSubmitState();
     });
-    charGrid.appendChild(el);
+    matTypeGrid.appendChild(el);
   });
+  updateMaterialSubmitState();
 }
-
-charSearch?.addEventListener("input", () => {
-  renderCharacters(charSearch.value);
-});
 
 function bindImageUpload({ inputId, areaId, placeholderId, previewId, errorId, onChange }) {
   const input = document.getElementById(inputId);
@@ -687,12 +711,17 @@ bindImageUpload({
 
 function updateMaterialSubmitState() {
   if (!btnSubmitMaterial) return;
-  btnSubmitMaterial.disabled = !(selectedCharacter && hasMatShot && hasMatSlip);
+  const noteOk = !!(document.getElementById("mat-note")?.value.trim());
+  btnSubmitMaterial.disabled = !(selectedMaterialType && noteOk && hasMatShot && hasMatSlip);
 }
+
+document.getElementById("mat-note")?.addEventListener("input", updateMaterialSubmitState);
 
 materialForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!selectedCharacter) { alert("กรุณาเลือกตัวละคร"); return; }
+  if (!selectedMaterialType) { alert("กรุณาเลือกประเภทวัสดุ"); return; }
+  const note = document.getElementById("mat-note")?.value.trim() || "";
+  if (!note) { alert("กรุณาระบุรายละเอียดวัสดุที่ต้องการ"); return; }
   if (!hasMatShot || !selectedMatScreenshotFile) { document.getElementById("mat-shot-error")?.classList.add("show"); return; }
   if (!hasMatSlip || !selectedMatSlipFile) { document.getElementById("mat-slip-error")?.classList.add("show"); return; }
 
@@ -701,8 +730,9 @@ materialForm?.addEventListener("submit", async (e) => {
   if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
 
   const details = {
-    character: selectedCharacter,
-    note: document.getElementById("mat-note")?.value.trim() || "",
+    materialType: selectedMaterialType.label,
+    forCharacter: document.getElementById("mat-for-character")?.value.trim() || "",
+    note,
     prohibitions: document.getElementById("mat-prohibitions")?.value.trim() || "",
     stream: document.querySelector('input[name="mat-stream"]:checked')?.value || "no"
   };
@@ -718,13 +748,135 @@ materialForm?.addEventListener("submit", async (e) => {
     alert(
       `✅ ส่งคำสั่งซื้อหาวัสดุสำเร็จ!\n\n` +
       `รหัสออเดอร์: ${savedMat.order.orderNumber}\n` +
-      `ตัวละคร: ${details.character}\n\n` +
-      `ระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
+      `ประเภท: ${details.materialType}\n` +
+      (details.forCharacter ? `ใช้กับ: ${details.forCharacter}\n` : "") +
+      `\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
     );
   } catch (error) {
     await handleOrderError(error);
   } finally {
     updateMaterialSubmitState();
+  }
+});
+
+// ---------- ปั้นตัวละคร ----------
+function renderBuildCharacters(filter = "") {
+  if (!buildCharGrid) return;
+  buildCharGrid.innerHTML = "";
+  const q = filter.trim().toLowerCase();
+  const list = q
+    ? CHARACTERS.filter(c => c.toLowerCase().includes(q))
+    : CHARACTERS;
+
+  if (!list.length) {
+    buildCharGrid.innerHTML = `<p class="hint" style="padding:0.8rem;grid-column:1/-1">ไม่พบตัวละคร</p>`;
+    return;
+  }
+
+  list.forEach(name => {
+    const el = document.createElement("div");
+    el.className = "char-item" + (selectedBuildCharacter === name ? " selected" : "");
+    el.textContent = name;
+    el.addEventListener("click", () => {
+      selectedBuildCharacter = name;
+      buildCharGrid.querySelectorAll(".char-item").forEach(c => c.classList.remove("selected"));
+      el.classList.add("selected");
+      if (buildCharSelectedHint) buildCharSelectedHint.textContent = "เลือกแล้ว: " + name;
+      updateBuildSubmitState();
+    });
+    buildCharGrid.appendChild(el);
+  });
+}
+
+function renderBuildGoals() {
+  if (!buildGoalGrid) return;
+  buildGoalGrid.innerHTML = "";
+  selectedBuildGoal = null;
+  BUILD_GOALS.forEach(opt => {
+    const el = document.createElement("div");
+    el.className = "package-card";
+    el.innerHTML = `<span class="gems">${opt.label}</span><span class="price">${opt.sub}</span>`;
+    el.addEventListener("click", () => {
+      selectedBuildGoal = opt;
+      buildGoalGrid.querySelectorAll(".package-card").forEach(c => c.classList.remove("selected"));
+      el.classList.add("selected");
+      updateBuildSubmitState();
+    });
+    buildGoalGrid.appendChild(el);
+  });
+  updateBuildSubmitState();
+}
+
+buildCharSearch?.addEventListener("input", () => {
+  renderBuildCharacters(buildCharSearch.value);
+});
+
+bindImageUpload({
+  inputId: "build-shot-upload",
+  areaId: "build-shot-area",
+  placeholderId: "build-shot-placeholder",
+  previewId: "build-shot-preview",
+  errorId: null,
+  onChange: (ok, file) => { selectedBuildScreenshotFile = file || null; hasBuildShot = ok; }
+});
+
+bindImageUpload({
+  inputId: "build-slip-upload",
+  areaId: "build-slip-area",
+  placeholderId: "build-slip-placeholder",
+  previewId: "build-slip-preview",
+  errorId: "build-slip-error",
+  onChange: (ok, file) => { selectedBuildSlipFile = file || null; hasBuildSlip = ok; updateBuildSubmitState(); }
+});
+
+function updateBuildSubmitState() {
+  if (!btnSubmitBuild) return;
+  btnSubmitBuild.disabled = !(selectedBuildCharacter && selectedBuildGoal && hasBuildSlip);
+}
+
+buildForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!selectedBuildCharacter) { alert("กรุณาเลือกตัวละคร"); return; }
+  if (!selectedBuildGoal) { alert("กรุณาเลือกเป้าหมายการปั้น"); return; }
+  if (!hasBuildSlip || !selectedBuildSlipFile) { document.getElementById("build-slip-error")?.classList.add("show"); return; }
+
+  const userVal = document.getElementById("build-user")?.value.trim();
+  const uidVal = document.getElementById("build-id")?.value.trim();
+  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+
+  const details = {
+    character: selectedBuildCharacter,
+    goal: selectedBuildGoal.label,
+    levelFrom: document.getElementById("build-level-from")?.value.trim() || "",
+    levelTo: document.getElementById("build-level-to")?.value.trim() || "",
+    talent: document.getElementById("build-talent")?.value.trim() || "",
+    note: document.getElementById("build-note")?.value.trim() || "",
+    prohibitions: document.getElementById("build-prohibitions")?.value.trim() || "",
+    stream: document.querySelector('input[name="build-stream"]:checked')?.value || "no"
+  };
+
+  btnSubmitBuild.disabled = true;
+  try {
+    const saved = await saveOrder({
+      service: "build-char",
+      gameUsername: userVal,
+      gameUid: uidVal,
+      details
+    }, {
+      slipFile: selectedBuildSlipFile,
+      attachmentFile: selectedBuildScreenshotFile || null
+    });
+    alert(
+      `✅ ส่งคำสั่งซื้อปั้นตัวละครสำเร็จ!\n\n` +
+      `รหัสออเดอร์: ${saved.order.orderNumber}\n` +
+      `ตัวละคร: ${details.character}\n` +
+      `เป้าหมาย: ${details.goal}\n\n` +
+      `ระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
+    );
+  } catch (error) {
+    await handleOrderError(error);
+  } finally {
+    updateBuildSubmitState();
   }
 });
 
@@ -846,6 +998,7 @@ exploreForm?.addEventListener("submit", async (e) => {
 const SERVICE_LABEL = {
   "farm-gem": "ฟาร์มเจม",
   material: "หาวัสดุ",
+  "build-char": "ปั้นตัวละคร",
   abyss: "เคลียร์ Abyss",
   explore: "สำรวจแผนที่"
 };

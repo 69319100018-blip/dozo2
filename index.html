@@ -106,7 +106,13 @@
           <div class="service-card glass" data-service="material">
             <div class="card-icon">🌿</div>
             <h3>หาวัสดุ</h3>
-            <p>จัดหาวัสดุเลื่อนขั้นตัวละคร &amp; อาวุธ</p>
+            <p>ฟาร์มวัสดุเลื่อนขั้น / Talent / อาวุธ ตามที่ต้องการ</p>
+            <button class="btn-service">เลือกบริการ</button>
+          </div>
+          <div class="service-card glass" data-service="build-char">
+            <div class="card-icon">✨</div>
+            <h3>ปั้นตัวละคร</h3>
+            <p>เลเวล อัพ Ascension Talent และเซ็ตอัพตัวละคร</p>
             <button class="btn-service">เลือกบริการ</button>
           </div>
           <div class="service-card glass" data-service="abyss">
@@ -233,7 +239,7 @@
         </form>
       </div>
 
-      <!-- ===== ORDER MATERIAL VIEW ===== -->
+      <!-- ===== ORDER MATERIAL VIEW (หาวัสดุ) ===== -->
       <div id="view-order-material" class="view">
         <div class="order-header">
           <button class="btn-back" id="btn-back-home-mat" type="button">← กลับหน้าหลัก</button>
@@ -241,17 +247,32 @@
         </div>
 
         <form id="material-form" class="order-form">
-          <!-- 1. เลือกตัวละคร -->
           <section class="form-section glass">
-            <h3 class="section-title">1. เลือกตัวละคร</h3>
-            <div class="form-group">
-              <input type="text" id="char-search" placeholder="ค้นหาชื่อตัวละคร..." autocomplete="off" />
+            <h3 class="section-title">1. ประเภทวัสดุที่ต้องการ</h3>
+            <p class="hint" style="margin-bottom:0.8rem">บริการนี้โฟกัสที่<strong>ฟาร์ม/จัดหาวัสดุ</strong> เช่น วัสดุเลื่อนขั้น Talent อาวุธ หรือบอส — ถ้าต้องการปั้นตัวละครทั้งชุดให้ใช้บริการ “ปั้นตัวละคร”</p>
+            <div class="package-grid" id="mat-type-grid"></div>
+            <div class="form-group" style="margin-top:0.9rem">
+              <label for="mat-for-character">ใช้กับตัวละคร / อาวุธ (ไม่บังคับ)</label>
+              <input type="text" id="mat-for-character" maxlength="100" placeholder="เช่น Raiden Shogun, Mistsplitter" />
             </div>
-            <div class="char-grid" id="char-grid"></div>
-            <p class="hint" id="char-selected-hint">ยังไม่ได้เลือกตัวละคร</p>
+            <div class="form-group">
+              <label for="mat-note">รายละเอียดวัสดุที่ต้องการ <span class="required">*จำเป็น</span></label>
+              <textarea id="mat-note" rows="3" placeholder="เช่น ต้องการวัสดุ Ascension ตัวละครถึงขั้น 6, หนังสือ talent ถึง 9, boss drop 20 ชิ้น ฯลฯ" required></textarea>
+            </div>
+            <div class="form-group">
+              <label>แคปหน้าตาวัสดุ / รายการในเกม <span class="required">*จำเป็น</span></label>
+              <div class="upload-area" id="mat-shot-area">
+                <input type="file" id="mat-shot-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="upload-placeholder" id="mat-shot-placeholder">
+                  <span>📸 คลิกหรือลากแคปหน้าตาวัสดุมาวาง</span>
+                  <small>รองรับ JPG, PNG, WEBP ≤ 3 MB</small>
+                </div>
+                <img id="mat-shot-preview" class="slip-preview hidden" alt="ตัวอย่างแคปวัสดุ" />
+              </div>
+              <p class="hint warn" id="mat-shot-error">ต้องอัปโหลดแคปหน้าตาวัสดุก่อน</p>
+            </div>
           </section>
 
-          <!-- 2. ข้อมูลบัญชี -->
           <section class="form-section glass">
             <h3 class="section-title">2. ข้อมูลบัญชีเกม</h3>
             <div class="form-row">
@@ -267,34 +288,11 @@
             <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
           </section>
 
-          <!-- 3. วัสดุที่ต้องการ -->
           <section class="form-section glass">
-            <h3 class="section-title">3. รายการวัสดุที่ต้องการ</h3>
-            <p class="hint" style="margin-bottom:0.8rem">ลูกค้า<strong>จำเป็นต้องแคปหน้าตาวัสดุ</strong>จากในเกม แล้วอัปโหลดมาด้านล่าง</p>
-            <div class="form-group">
-              <label for="mat-note">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
-              <textarea id="mat-note" rows="2" placeholder="เช่น ต้องการเลื่อนขั้น Ascension 6, ต้องการ talent 9/9/9 ฯลฯ"></textarea>
-            </div>
-            <div class="form-group">
-              <label>แคปหน้าตาวัสดุ <span class="required">*จำเป็น</span></label>
-              <div class="upload-area" id="mat-shot-area">
-                <input type="file" id="mat-shot-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
-                <div class="upload-placeholder" id="mat-shot-placeholder">
-                  <span>📸 คลิกหรือลากแคปหน้าตาวัสดุมาวาง</span>
-                  <small>รองรับ JPG, PNG</small>
-                </div>
-                <img id="mat-shot-preview" class="slip-preview hidden" alt="ตัวอย่างแคปวัสดุ" />
-              </div>
-              <p class="hint warn" id="mat-shot-error">ต้องอัปโหลดแคปหน้าตาวัสดุก่อน</p>
-            </div>
-          </section>
-
-          <!-- 4. ข้อห้าม + สตรีม -->
-          <section class="form-section glass">
-            <h3 class="section-title">4. ข้อห้าม &amp; การสตรีมจอ</h3>
+            <h3 class="section-title">3. ข้อห้าม &amp; การสตรีมจอ</h3>
             <div class="form-group">
               <label for="mat-prohibitions">ระบุสิ่งที่ห้ามทำในงานนี้ (ถ้ามี)</label>
-              <textarea id="mat-prohibitions" rows="2" placeholder="เช่น ห้ามใช้ตัวละครบางตัว, ห้ามเปิดหีบ ฯลฯ"></textarea>
+              <textarea id="mat-prohibitions" rows="2" placeholder="เช่น ห้ามเปิดหีบ, ห้ามใช้เรซิ่นเกินที่ตกลง ฯลฯ"></textarea>
             </div>
             <div class="radio-group">
               <label class="radio-label">
@@ -308,10 +306,9 @@
             </div>
           </section>
 
-          <!-- 5. ชำระเงิน -->
           <section class="form-section glass">
-            <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
-            <p class="hint">ราคาจะตกลงหลังทางร้านดูแคปวัสดุแล้ว — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
+            <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
+            <p class="hint">ราคาจะตกลงหลังทางร้านดูรายการวัสดุแล้ว — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
             <div class="qr-box">
               <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
               <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
@@ -322,7 +319,7 @@
                 <input type="file" id="mat-slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
                 <div class="upload-placeholder" id="mat-slip-placeholder">
                   <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
-                  <small>รองรับ JPG, PNG</small>
+                  <small>รองรับ JPG, PNG, WEBP ≤ 3 MB</small>
                 </div>
                 <img id="mat-slip-preview" class="slip-preview hidden" alt="ตัวอย่างสลิป" />
               </div>
@@ -334,6 +331,7 @@
             <h3 class="section-title">📌 หมายเหตุสำคัญ</h3>
             <ul class="note-list">
               <li>ต้องแคปหน้าตาวัสดุจากในเกมส่งมาด้วยทุกครั้ง</li>
+              <li>บริการนี้เป็นการ<strong>หาวัสดุ</strong> ไม่รวมปั้นเลเวล/Talent ให้ครบชุด</li>
               <li>ยกเลิกงานกลางคัน <strong>ไม่มีการคืนเงิน</strong></li>
               <li>หลังกดสั่งซื้อ กรุณา <strong>แคปหน้าจอรายการนี้</strong> แล้วส่งมาทาง Facebook: <strong>Do Zo Genshin</strong></li>
             </ul>
@@ -341,7 +339,130 @@
 
           <div class="form-actions">
             <button type="submit" class="btn-primary btn-submit" id="btn-submit-material" disabled>
-              สั่งซื้อบริการ
+              สั่งซื้อบริการหาวัสดุ
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ===== ORDER BUILD CHARACTER VIEW (ปั้นตัวละคร) ===== -->
+      <div id="view-order-build" class="view">
+        <div class="order-header">
+          <button class="btn-back" id="btn-back-home-build" type="button">← กลับหน้าหลัก</button>
+          <h2>สั่งงานปั้นตัวละคร</h2>
+        </div>
+
+        <form id="build-form" class="order-form">
+          <section class="form-section glass">
+            <h3 class="section-title">1. เลือกตัวละครที่ต้องการปั้น</h3>
+            <div class="form-group">
+              <input type="text" id="build-char-search" placeholder="ค้นหาชื่อตัวละคร..." autocomplete="off" />
+            </div>
+            <div class="char-grid" id="build-char-grid"></div>
+            <p class="hint" id="build-char-selected-hint">ยังไม่ได้เลือกตัวละคร</p>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">2. เป้าหมายการปั้น</h3>
+            <div class="package-grid" id="build-goal-grid"></div>
+            <div class="form-row" style="margin-top:0.9rem">
+              <div class="form-group">
+                <label for="build-level-from">เลเวลปัจจุบัน (โดยประมาณ)</label>
+                <input type="text" id="build-level-from" maxlength="20" placeholder="เช่น 40 / 60" />
+              </div>
+              <div class="form-group">
+                <label for="build-level-to">เลเวลเป้าหมาย</label>
+                <input type="text" id="build-level-to" maxlength="20" placeholder="เช่น 90" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="build-talent">Talent / ทักษะที่ต้องการ</label>
+              <input type="text" id="build-talent" maxlength="120" placeholder="เช่น 9/9/9 หรือ Normal 6 / Skill 8 / Burst 9" />
+            </div>
+            <div class="form-group">
+              <label for="build-note">รายละเอียดเพิ่มเติม</label>
+              <textarea id="build-note" rows="3" placeholder="เช่น ต้องการอัพอาวุธถึง 90, ฟาร์ม artifact เบื้องต้น, มีวัสดุบางส่วนอยู่แล้ว ฯลฯ"></textarea>
+            </div>
+            <div class="form-group">
+              <label>แคปสถานะตัวละครปัจจุบัน (ไม่บังคับ แต่แนะนำ)</label>
+              <div class="upload-area" id="build-shot-area">
+                <input type="file" id="build-shot-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="upload-placeholder" id="build-shot-placeholder">
+                  <span>📸 คลิกหรือลากแคปหน้าตัวละครมาวาง</span>
+                  <small>รองรับ JPG, PNG, WEBP ≤ 3 MB</small>
+                </div>
+                <img id="build-shot-preview" class="slip-preview hidden" alt="ตัวอย่างแคปตัวละคร" />
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">3. ข้อมูลบัญชีเกม</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="build-user">User (ชื่อผู้ใช้)</label>
+                <input type="text" id="build-user" placeholder="Username" required />
+              </div>
+              <div class="form-group">
+                <label for="build-id">UID / ID</label>
+                <input type="text" id="build-id" placeholder="เช่น 812345678" required />
+              </div>
+            </div>
+            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">4. ข้อห้าม &amp; การสตรีมจอ</h3>
+            <div class="form-group">
+              <label for="build-prohibitions">ระบุสิ่งที่ห้ามทำในงานนี้ (ถ้ามี)</label>
+              <textarea id="build-prohibitions" rows="2" placeholder="เช่น ห้ามใช้เรซิ่นเกินที่ตกลง, ห้ามเปลี่ยนทีมหลัก ฯลฯ"></textarea>
+            </div>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="build-stream" value="yes" />
+                <span>ต้องการให้สตรีมจอ</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="build-stream" value="no" checked />
+                <span>ไม่ต้องสตรีมจอ</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
+            <p class="hint">ราคาจะตกลงตามเป้าหมายปั้น — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
+            <div class="qr-box">
+              <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
+              <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
+            </div>
+            <div class="form-group">
+              <label for="build-slip-upload">อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
+              <div class="upload-area" id="build-slip-area">
+                <input type="file" id="build-slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="upload-placeholder" id="build-slip-placeholder">
+                  <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
+                  <small>รองรับ JPG, PNG, WEBP ≤ 3 MB</small>
+                </div>
+                <img id="build-slip-preview" class="slip-preview hidden" alt="ตัวอย่างสลิป" />
+              </div>
+              <p class="hint warn" id="build-slip-error">ต้องอัปโหลดสลิปก่อนจึงจะกดสั่งซื้อได้</p>
+            </div>
+          </section>
+
+          <section class="form-section note-section glass">
+            <h3 class="section-title">📌 หมายเหตุสำคัญ</h3>
+            <ul class="note-list">
+              <li>บริการนี้คือ<strong>ปั้นตัวละคร</strong> (เลเวล / Ascension / Talent ตามที่ตกลง)</li>
+              <li>ถ้าต้องการแค่ฟาร์มวัสดุอย่างเดียว ให้ใช้บริการ “หาวัสดุ”</li>
+              <li>ยกเลิกงานกลางคัน <strong>ไม่มีการคืนเงิน</strong></li>
+              <li>หลังกดสั่งซื้อ กรุณา <strong>แคปหน้าจอรายการนี้</strong> แล้วส่งมาทาง Facebook: <strong>Do Zo Genshin</strong></li>
+            </ul>
+          </section>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary btn-submit" id="btn-submit-build" disabled>
+              สั่งซื้อบริการปั้นตัวละคร
             </button>
           </div>
         </form>

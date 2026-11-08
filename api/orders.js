@@ -12,7 +12,7 @@ const FARM_PRICES = new Map([
   [1600, 90], [3200, 160], [4800, 249], [6400, 370], [8000, 440],
   [9600, 500], [11200, 580], [12800, 680], [14400, 770], [16000, 890],
 ]);
-const ALLOWED_SERVICES = new Set(["farm-gem", "material", "abyss", "explore"]);
+const ALLOWED_SERVICES = new Set(["farm-gem", "material", "build-char", "abyss", "explore"]);
 const ALLOWED_STATUSES = new Set(["pending", "doing", "done", "cancel"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,10 +48,46 @@ function buildDetails(service, raw) {
   }
 
   if (service === "material") {
+    const materialType = cleanText(d.materialType || d.package, 80);
+    if (!materialType) throw new Error("กรุณาเลือกประเภทวัสดุ");
+    const note = cleanText(d.note, 1500);
+    if (!note) throw new Error("กรุณาระบุรายละเอียดวัสดุที่ต้องการ");
+    const forCharacter = cleanText(d.forCharacter || d.character, 100);
+    return {
+      details: { ...details, materialType, note, forCharacter: forCharacter || null },
+      totalPrice: null,
+      summary: forCharacter
+        ? `หาวัสดุ · ${materialType} · ${forCharacter}`
+        : `หาวัสดุ · ${materialType}`,
+    };
+  }
+
+  if (service === "build-char") {
     const character = cleanText(d.character, 100);
     if (!character) throw new Error("กรุณาเลือกตัวละคร");
+    const goal = cleanText(d.goal || d.package, 80);
+    if (!goal) throw new Error("กรุณาเลือกเป้าหมายการปั้น");
+    const levelFrom = cleanText(d.levelFrom, 20);
+    const levelTo = cleanText(d.levelTo, 20);
+    const talent = cleanText(d.talent, 120);
     const note = cleanText(d.note, 1500);
-    return { details: { ...details, character, note }, totalPrice: null, summary: `ตัวละคร: ${character}` };
+    const levelPart = [levelFrom, levelTo].filter(Boolean).join("→");
+    const summaryParts = [`ปั้น ${character}`, goal];
+    if (levelPart) summaryParts.push(`Lv ${levelPart}`);
+    if (talent) summaryParts.push(`Talent ${talent}`);
+    return {
+      details: {
+        ...details,
+        character,
+        goal,
+        levelFrom: levelFrom || null,
+        levelTo: levelTo || null,
+        talent: talent || null,
+        note: note || null,
+      },
+      totalPrice: null,
+      summary: summaryParts.join(" · "),
+    };
   }
 
   const packageName = cleanText(d.package, 100);
@@ -178,6 +214,9 @@ async function handler(request) {
       if (service === "material" && !validateUploadPath(attachmentPath, user.id)) {
         return json({ error: "กรุณาอัปโหลดภาพวัสดุใหม่" }, 400);
       }
+      if (service === "build-char" && attachmentPath && !validateUploadPath(attachmentPath, user.id)) {
+        return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
+      }
       if (attachmentPath && !validateUploadPath(attachmentPath, user.id)) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
@@ -288,6 +327,9 @@ async function handler(request) {
     if (
       error.message === "แพ็กเกจเจมไม่ถูกต้อง" ||
       error.message === "กรุณาเลือกตัวละคร" ||
+      error.message === "กรุณาเลือกประเภทวัสดุ" ||
+      error.message === "กรุณาระบุรายละเอียดวัสดุที่ต้องการ" ||
+      error.message === "กรุณาเลือกเป้าหมายการปั้น" ||
       error.message === "กรุณาเลือกแพ็กเกจหรือเป้าหมาย"
     ) {
       return json({ error: error.message }, 400);
