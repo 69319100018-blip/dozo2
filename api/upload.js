@@ -67,9 +67,29 @@ async function handler(request) {
       }
 
       const sql = getSql();
-      const [access] = user.role === "admin"
-        ? await sql`SELECT id FROM orders WHERE slip_path = ${pathname} OR attachment_path = ${pathname} LIMIT 1`
-        : await sql`SELECT id FROM orders WHERE customer_id = ${user.id} AND (slip_path = ${pathname} OR attachment_path = ${pathname}) LIMIT 1`;
+      let access;
+      if (user.role === "admin") {
+        [access] = await sql`
+          SELECT id FROM orders
+          WHERE slip_path = ${pathname} OR attachment_path = ${pathname}
+          LIMIT 1
+        `;
+      } else if (user.role === "staff") {
+        // ลูกทีมดูไฟล์ได้เฉพาะงานที่ถูกส่งมอบให้ตัวเอง
+        [access] = await sql`
+          SELECT id FROM orders
+          WHERE assigned_staff_id = ${user.id}
+            AND (slip_path = ${pathname} OR attachment_path = ${pathname})
+          LIMIT 1
+        `;
+      } else {
+        [access] = await sql`
+          SELECT id FROM orders
+          WHERE customer_id = ${user.id}
+            AND (slip_path = ${pathname} OR attachment_path = ${pathname})
+          LIMIT 1
+        `;
+      }
       if (!access) return json({ error: "ไม่มีสิทธิ์ดูไฟล์นี้" }, 403);
 
       const blob = await get(pathname, { access: "private" });

@@ -1026,3 +1026,176 @@ html, body {
   .team-form-grid { grid-template-columns: 1fr; gap: 0; }
   .team-add-button { max-width: none; }
 }
+
+/* ========== ROLE CHROME ========== */
+.customer-only.hidden,
+.staff-only.hidden,
+.admin-only.hidden { display: none !important; }
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-right: 0.35rem;
+}
+.role-badge.hidden { display: none; }
+.role-badge.role-admin {
+  background: linear-gradient(135deg, #f6d365, #fda085);
+  color: #1a1208;
+}
+.role-badge.role-staff {
+  background: linear-gradient(135deg, #4ecdc4, #2a9d8f);
+  color: #041512;
+}
+
+/* ========== ADMIN SUMMARY / STAFF STATS ========== */
+.admin-hero, .staff-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.admin-summary,
+.staff-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+.stat-card {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius);
+  text-align: center;
+}
+.stat-num {
+  display: block;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.2;
+}
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.admin-toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.admin-filter,
+.assign-select,
+.btn-status {
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.28);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  max-width: 100%;
+}
+.admin-filter:focus,
+.assign-select:focus,
+.btn-status:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.assign-select { margin-top: 0.35rem; width: 100%; min-width: 140px; }
+.btn-status { margin-top: 0.35rem; display: block; width: 100%; }
+.assign-current { font-size: 0.8rem; font-weight: 600; }
+.assign-current.muted,
+.muted { color: var(--text-muted); }
+.row-unassigned { background: rgba(246, 211, 101, 0.05); }
+.svc-chip {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(78,205,196,0.12);
+  border: 1px solid rgba(78,205,196,0.25);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.cell-detail { max-width: 220px; }
+.cell-detail small { color: var(--text-muted); }
+
+/* ========== STAFF JOB BOARD ========== */
+.staff-job-list {
+  display: grid;
+  gap: 0.9rem;
+}
+.staff-job-card {
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--radius);
+  border-left: 3px solid rgba(255,255,255,0.15);
+}
+.staff-job-card.status-border-pending { border-left-color: #f6d365; }
+.staff-job-card.status-border-doing { border-left-color: #4ecdc4; }
+.staff-job-card.status-border-done { border-left-color: #7bd88f; }
+.staff-job-card.status-border-cancel { border-left-color: #e76f51; }
+.staff-job-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+.staff-job-head h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+}
+.staff-job-summary {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+.staff-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+.staff-job-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.staff-job-actions label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.staff-job-actions .btn-status {
+  margin-top: 0;
+  width: auto;
+  min-width: 150px;
+}
+
+@media (max-width: 900px) {
+  .admin-summary,
+  .staff-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .admin-summary,
+  .staff-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .staff-job-head { flex-direction: column; }
+  .staff-job-actions { flex-direction: column; align-items: stretch; }
+  .staff-job-actions .btn-status { width: 100%; }
+}

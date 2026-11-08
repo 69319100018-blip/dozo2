@@ -40,7 +40,8 @@ const views = {
   orderExplore: document.getElementById("view-order-explore"),
   history: document.getElementById("view-history"),
   contact: document.getElementById("view-contact"),
-  admin: document.getElementById("view-admin")
+  admin: document.getElementById("view-admin"),
+  staff: document.getElementById("view-staff")
 };
 
 // Farm form
@@ -96,6 +97,9 @@ let hasExploreSlip = false;
 
 let currentUser = null;
 let isAdmin = false;
+let isStaff = false;
+let staffListCache = [];
+let adminOrdersCache = [];
 
 // ---------- Neon API client ----------
 async function loadOrders() {
@@ -281,17 +285,47 @@ function setAuthMode(registerMode) {
   if (authError) authError.classList.add("hidden");
 }
 
+function applyRoleChrome(user) {
+  isAdmin = user?.role === "admin";
+  isStaff = user?.role === "staff";
+
+  document.querySelectorAll(".customer-only").forEach(el => {
+    el.classList.toggle("hidden", isAdmin || isStaff);
+  });
+  document.querySelectorAll(".admin-only").forEach(el => {
+    el.classList.toggle("hidden", !isAdmin);
+  });
+  document.querySelectorAll(".staff-only").forEach(el => {
+    el.classList.toggle("hidden", !isStaff);
+  });
+
+  const badge = document.getElementById("role-badge");
+  if (badge) {
+    if (isAdmin) {
+      badge.textContent = "ADMIN";
+      badge.className = "role-badge role-admin";
+    } else if (isStaff) {
+      badge.textContent = "STAFF";
+      badge.className = "role-badge role-staff";
+    } else {
+      badge.textContent = "";
+      badge.className = "role-badge hidden";
+    }
+  }
+}
+
 function goToDashboard(user) {
   currentUser = user;
-  isAdmin = user?.role === "admin";
+  applyRoleChrome(user);
   userEmailEl.textContent = user?.email || "ผู้ใช้";
-  displayNameEl.textContent = user?.displayName || user?.email?.split("@")[0] || "นักเดินทาง";
-
-  const adminNav = document.getElementById("nav-admin");
-  if (adminNav) adminNav.classList.toggle("hidden", !isAdmin);
+  if (displayNameEl) {
+    displayNameEl.textContent = user?.displayName || user?.email?.split("@")[0] || "นักเดินทาง";
+  }
 
   switchScreen(loginScreen, dashboardScreen);
-  showView(isAdmin ? "admin" : "home");
+  if (isAdmin) showView("admin");
+  else if (isStaff) showView("staff");
+  else showView("home");
 }
 
 loginForm.addEventListener("submit", async (e) => {
@@ -338,6 +372,10 @@ logoutBtn.addEventListener("click", async () => {
   }
   currentUser = null;
   isAdmin = false;
+  isStaff = false;
+  staffListCache = [];
+  adminOrdersCache = [];
+  applyRoleChrome(null);
   dashboardScreen.classList.remove("active");
   setTimeout(() => {
     dashboardScreen.style.display = "none";
@@ -362,12 +400,20 @@ async function checkAuthState() {
 
 // ---------- Views / Navbar ----------
 function showView(name) {
+  // กันแอดมิน/สตาฟ์หลุดไปหน้าสั่งซื้อ
+  if ((isAdmin || isStaff) && (name === "home" || name.startsWith("order-"))) {
+    name = isAdmin ? "admin" : "staff";
+  }
+  if (name === "admin" && !isAdmin) name = isStaff ? "staff" : "home";
+  if (name === "staff" && !isStaff) name = isAdmin ? "admin" : "home";
+
   Object.values(views).forEach(v => v && v.classList.remove("active"));
   const map = {
     home: views.home,
     history: views.history,
     contact: views.contact,
     admin: views.admin,
+    staff: views.staff,
     "order-farm": views.orderFarm,
     "order-material": views.orderMaterial,
     "order-abyss": views.orderAbyss,
@@ -380,6 +426,7 @@ function showView(name) {
   });
 
   if (name === "admin" && isAdmin) renderAdminAll();
+  if (name === "staff" && isStaff) renderStaffJobs();
   if (name === "history") renderCustomerHistory();
 }
 
@@ -795,7 +842,7 @@ exploreForm?.addEventListener("submit", async (e) => {
   }
 });
 
-// ---------- Admin panels ----------
+// ---------- Admin / Staff panels ----------
 const SERVICE_LABEL = {
   "farm-gem": "ฟาร์มเจม",
   material: "หาวัสดุ",
@@ -821,47 +868,192 @@ function formatTime(iso) {
   }
 }
 
+function statusSelectHtml(orderId, current, extraClass = "") {
+  const st = current || "pending";
+  return `<select class="btn-status ${extraClass}" data-order-id="${escapeHtml(orderId)}">
+    <option value="pending" ${st === "pending" ? "selected" : ""}>รอดำเนินการ</option>
+    <option value="doing" ${st === "doing" ? "selected" : ""}>กำลังทำ</option>
+    <option value="done" ${st === "done" ? "selected" : ""}>เสร็จแล้ว</option>
+    <option value="cancel" ${st === "cancel" ? "selected" : ""}>ยกเลิก</option>
+  </select>`;
+}
+
+function staffAssignSelectHtml(order) {
+  const current = order.assignedStaffId || "";
+  const options = [
+    `<option value="">— ยังไม่มอบหมาย —</option>`,
+    ...staffListCache.map(s =>
+      `<option value="${escapeHtml(s.id)}" ${s.id === current ? "selected" : ""}>${escapeHtml(s.displayName || s.email)}</option>`
+    )
+  ];
+  return `<select class="assign-select" data-assign-order="${escapeHtml(order.id)}">${options.join("")}</select>`;
+}
+
+async function ensureStaffList() {
+  if (!isAdmin) return staffListCache;
+  try {
+    const result = await DozoAPI.listTeam();
+    staffListCache = Array.isArray(result.staff) ? result.staff : [];
+  } catch {
+    staffListCache = [];
+  }
+  return staffListCache;
+}
+
+function updateAdminSummary(orders) {
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+  set("admin-stat-orders", orders.length);
+  set("admin-stat-unassigned", orders.filter(o => !o.assignedStaffId).length);
+  set("admin-stat-doing", orders.filter(o => o.status === "doing").length);
+  set("admin-stat-staff", staffListCache.length);
+}
+
 async function renderAdminOrders() {
   const tbody = document.getElementById("orders-tbody");
   const countEl = document.getElementById("order-count");
   if (!tbody) return;
-  const orders = await loadOrders();
-  if (countEl) countEl.textContent = orders.length + " รายการ";
 
-  if (!orders.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์</td></tr>`;
+  await ensureStaffList();
+  const orders = await loadOrders();
+  adminOrdersCache = orders;
+  updateAdminSummary(orders);
+
+  const filter = document.getElementById("admin-order-filter")?.value || "all";
+  const filtered = orders.filter(o => {
+    if (filter === "all") return true;
+    if (filter === "unassigned") return !o.assignedStaffId;
+    return (o.status || "pending") === filter;
+  });
+
+  if (countEl) countEl.textContent = filtered.length + " รายการ" + (filter !== "all" ? ` (จาก ${orders.length})` : "");
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">ยังไม่มีออเดอร์${filter !== "all" ? "ตามตัวกรองนี้" : ""}</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = orders.map(o => {
+  tbody.innerHTML = filtered.map(o => {
     const st = o.status || "pending";
     const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
-    return `<tr>
+    const assignedLabel = o.assignedStaffName
+      ? `<div class="assign-current">${escapeHtml(o.assignedStaffName)}</div>`
+      : `<div class="assign-current muted">ยังไม่มอบหมาย</div>`;
+    return `<tr class="${o.assignedStaffId ? "" : "row-unassigned"}">
       <td>${escapeHtml(formatTime(o.createdAt))}</td>
-      <td>${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</td>
-      <td>${escapeHtml(o.summary || "-")}<br><small>${files}</small></td>
-      <td>${escapeHtml(o.customerEmail || "-")}</td>
-      <td>${escapeHtml(o.uid || "-")}</td>
-      <td><span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span></td>
+      <td><span class="svc-chip">${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</span></td>
+      <td class="cell-detail">${escapeHtml(o.summary || "-")}<br><small>${files}</small></td>
       <td>
-        <select class="btn-status" data-order-id="${escapeHtml(o.id)}">
-          <option value="pending" ${st === "pending" ? "selected" : ""}>รอดำเนินการ</option>
-          <option value="doing" ${st === "doing" ? "selected" : ""}>กำลังทำ</option>
-          <option value="done" ${st === "done" ? "selected" : ""}>เสร็จแล้ว</option>
-          <option value="cancel" ${st === "cancel" ? "selected" : ""}>ยกเลิก</option>
-        </select>
+        <div>${escapeHtml(o.customerEmail || "-")}</div>
+        <small class="muted">UID: ${escapeHtml(o.uid || "-")}</small>
+      </td>
+      <td>
+        ${assignedLabel}
+        ${staffAssignSelectHtml(o)}
+      </td>
+      <td>
+        <span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span>
+        ${statusSelectHtml(o.id, st)}
       </td>
     </tr>`;
   }).join("");
 
   tbody.querySelectorAll("select[data-order-id]").forEach(sel => {
     sel.addEventListener("change", async () => {
+      sel.disabled = true;
       try {
         await updateOrderStatus(sel.dataset.orderId, sel.value);
         await renderAdminOrders();
         await renderAdminCustomers();
       } catch (error) {
         alert(error.message || "อัปเดตสถานะไม่สำเร็จ");
+        sel.disabled = false;
+      }
+    });
+  });
+
+  tbody.querySelectorAll("select[data-assign-order]").forEach(sel => {
+    sel.addEventListener("change", async () => {
+      sel.disabled = true;
+      try {
+        const value = sel.value || null;
+        await DozoAPI.assignOrder(sel.dataset.assignOrder, value);
+        await renderAdminOrders();
+      } catch (error) {
+        alert(error.message || "มอบหมายงานไม่สำเร็จ");
+        sel.disabled = false;
+      }
+    });
+  });
+}
+
+async function renderStaffJobs() {
+  const list = document.getElementById("staff-job-list");
+  if (!list) return;
+
+  let orders = [];
+  try {
+    orders = await loadOrders();
+  } catch (error) {
+    list.innerHTML = `<div class="empty-state glass"><p>${escapeHtml(error.message || "โหลดงานไม่สำเร็จ")}</p></div>`;
+    return;
+  }
+
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+  set("staff-stat-total", orders.length);
+  set("staff-stat-doing", orders.filter(o => o.status === "doing").length);
+  set("staff-stat-done", orders.filter(o => o.status === "done").length);
+  set("staff-stat-pending", orders.filter(o => (o.status || "pending") === "pending").length);
+
+  if (!orders.length) {
+    list.innerHTML = `<div class="empty-state glass">
+      <p>ยังไม่มีงานที่ถูกส่งมอบให้คุณ</p>
+      <p class="muted">เมื่อแอดมินมอบหมายออเดอร์ให้คุณ รายการจะแสดงที่นี่ และคุณจะสามารถอัปเดตสถานะได้</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = orders.map(o => {
+    const st = o.status || "pending";
+    const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
+    return `<article class="staff-job-card glass status-border-${escapeHtml(st)}">
+      <div class="staff-job-head">
+        <div>
+          <h3>${escapeHtml(SERVICE_LABEL[o.service] || o.service)}
+            <span class="order-number">#${escapeHtml(o.orderNumber)}</span>
+          </h3>
+          <p class="staff-job-summary">${escapeHtml(o.summary || "-")}</p>
+        </div>
+        <span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span>
+      </div>
+      <div class="staff-job-meta">
+        <span>ลูกค้า: ${escapeHtml(o.customerEmail || "-")}</span>
+        <span>UID: ${escapeHtml(o.uid || "-")}</span>
+        <span>Username: ${escapeHtml(o.gameUsername || "-")}</span>
+        <span>${escapeHtml(formatTime(o.createdAt))}</span>
+      </div>
+      ${files ? `<div class="history-files">${files}</div>` : ""}
+      <div class="staff-job-actions">
+        <label>อัปเดตสถานะ</label>
+        ${statusSelectHtml(o.id, st, "staff-status")}
+      </div>
+    </article>`;
+  }).join("");
+
+  list.querySelectorAll("select[data-order-id]").forEach(sel => {
+    sel.addEventListener("change", async () => {
+      sel.disabled = true;
+      try {
+        await updateOrderStatus(sel.dataset.orderId, sel.value);
+        await renderStaffJobs();
+      } catch (error) {
+        alert(error.message || "อัปเดตสถานะไม่สำเร็จ");
+        sel.disabled = false;
       }
     });
   });
@@ -937,7 +1129,10 @@ async function renderAdminTeam() {
     const result = await DozoAPI.listTeam();
     const members = Array.isArray(result.staff) ? result.staff : [];
     const candidates = Array.isArray(result.candidates) ? result.candidates : [];
+    staffListCache = members;
 
+    const adminStaffStat = document.getElementById("admin-stat-staff");
+    if (adminStaffStat) adminStaffStat.textContent = String(members.length);
     if (countEl) countEl.textContent = `${members.length} คน`;
 
     if (memberSelect) {
@@ -1023,9 +1218,12 @@ teamAddForm?.addEventListener("submit", async event => {
 });
 
 async function renderAdminAll() {
+  await ensureStaffList();
   await renderAdminOrders();
   await renderAdminCustomers();
   await renderAdminTeam();
+  const staffCountEl = document.getElementById("admin-stat-staff");
+  if (staffCountEl) staffCountEl.textContent = String(staffListCache.length);
 }
 
 document.querySelectorAll(".admin-tab").forEach(tab => {
@@ -1043,7 +1241,15 @@ document.getElementById("btn-refresh-orders")?.addEventListener("click", async (
   await renderAdminCustomers();
 });
 
+document.getElementById("admin-order-filter")?.addEventListener("change", () => {
+  renderAdminOrders();
+});
+
 document.getElementById("btn-refresh-team")?.addEventListener("click", renderAdminTeam);
+
+document.getElementById("btn-refresh-staff")?.addEventListener("click", () => {
+  if (isStaff) renderStaffJobs();
+});
 
 // ---------- Start ----------
 window.addEventListener("DOMContentLoaded", () => {

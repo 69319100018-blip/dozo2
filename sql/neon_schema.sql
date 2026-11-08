@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS orders (
   details JSONB NOT NULL DEFAULT '{}'::jsonb,
   slip_path TEXT NOT NULL,
   attachment_path TEXT,
+  assigned_staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -44,6 +45,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_status_created
 
 CREATE INDEX IF NOT EXISTS idx_orders_service_created
   ON orders (service, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_orders_assigned_staff_created
+  ON orders (assigned_staff_id, created_at DESC);
 
 -- After a customer has registered through the website, promote that account
 -- to admin by replacing the email below with the exact registered email.

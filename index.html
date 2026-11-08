@@ -71,13 +71,18 @@
       <div class="header-left">
         <h1 class="brand">Dozo <span>Genshin</span></h1>
       </div>
-      <nav class="navbar">
-        <button class="nav-item active" data-view="home">หน้าหลัก</button>
-        <button class="nav-item" data-view="history">ประวัติออเดอร์</button>
-        <button class="nav-item" data-view="contact">ติดต่อเรา</button>
-        <button class="nav-item admin-only hidden" data-view="admin" id="nav-admin">แอดมิน</button>
+      <nav class="navbar" id="main-nav">
+        <!-- ลูกค้า -->
+        <button class="nav-item customer-only active" data-view="home">หน้าหลัก</button>
+        <button class="nav-item customer-only" data-view="history">ประวัติออเดอร์</button>
+        <button class="nav-item customer-only" data-view="contact">ติดต่อเรา</button>
+        <!-- ลูกทีม -->
+        <button class="nav-item staff-only hidden" data-view="staff" id="nav-staff">งานของฉัน</button>
+        <!-- แอดมิน -->
+        <button class="nav-item admin-only hidden" data-view="admin" id="nav-admin">แผงแอดมิน</button>
       </nav>
       <div class="header-right">
+        <span id="role-badge" class="role-badge hidden"></span>
         <span id="user-email" class="user-email"></span>
         <button id="logout-btn" class="btn-logout">ออกจากระบบ</button>
       </div>
@@ -542,11 +547,43 @@
       </div>
 
       <!-- ===== ADMIN VIEW ===== -->
-      <div id="view-admin" class="view">
-        <section class="welcome-section">
-          <h2>แผงแอดมินร้าน</h2>
-          <p>ดูออเดอร์ ลูกค้า และลูกทีมทั้งหมด</p>
+      <!-- ===== STAFF VIEW ===== -->
+      <div id="view-staff" class="view">
+        <section class="welcome-section staff-hero">
+          <div>
+            <h2>งานของฉัน</h2>
+            <p>แสดงเฉพาะงานที่แอดมินส่งมอบให้คุณแล้ว — ก่อนถูกมอบหมายจะยังไม่เห็นรายการ</p>
+          </div>
+          <button type="button" class="btn-sm" id="btn-refresh-staff">รีเฟรช</button>
         </section>
+
+        <div class="staff-stats" id="staff-stats">
+          <div class="stat-card glass"><span class="stat-num" id="staff-stat-total">0</span><span class="stat-label">ทั้งหมด</span></div>
+          <div class="stat-card glass"><span class="stat-num" id="staff-stat-doing">0</span><span class="stat-label">กำลังทำ</span></div>
+          <div class="stat-card glass"><span class="stat-num" id="staff-stat-done">0</span><span class="stat-label">เสร็จแล้ว</span></div>
+          <div class="stat-card glass"><span class="stat-num" id="staff-stat-pending">0</span><span class="stat-label">รอดำเนินการ</span></div>
+        </div>
+
+        <div id="staff-job-list" class="staff-job-list">
+          <div class="empty-state glass"><p>ยังไม่มีงานที่ถูกส่งมอบให้คุณ</p></div>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN VIEW ===== -->
+      <div id="view-admin" class="view">
+        <section class="welcome-section admin-hero">
+          <div>
+            <h2>แผงควบคุมแอดมิน</h2>
+            <p>จัดการออเดอร์ มอบหมายงานให้ลูกทีม และดูแลสมาชิก — แยกจากหน้าสั่งซื้อของลูกค้า</p>
+          </div>
+        </section>
+
+        <div class="admin-summary" id="admin-summary">
+          <div class="stat-card glass"><span class="stat-num" id="admin-stat-orders">0</span><span class="stat-label">ออเดอร์ทั้งหมด</span></div>
+          <div class="stat-card glass"><span class="stat-num" id="admin-stat-unassigned">0</span><span class="stat-label">ยังไม่มอบหมาย</span></div>
+          <div class="stat-card glass"><span class="stat-num" id="admin-stat-doing">0</span><span class="stat-label">กำลังทำ</span></div>
+          <div class="stat-card glass"><span class="stat-num" id="admin-stat-staff">0</span><span class="stat-label">ลูกทีม</span></div>
+        </div>
 
         <div class="admin-tabs">
           <button type="button" class="admin-tab active" data-admin-tab="orders">คำสั่งซื้อ</button>
@@ -558,7 +595,17 @@
         <div class="admin-panel active" id="admin-panel-orders">
           <div class="admin-toolbar">
             <span id="order-count">0 รายการ</span>
-            <button type="button" class="btn-sm" id="btn-refresh-orders">รีเฟรช</button>
+            <div class="admin-toolbar-actions">
+              <select id="admin-order-filter" class="admin-filter">
+                <option value="all">ทุกสถานะ</option>
+                <option value="pending">รอดำเนินการ</option>
+                <option value="doing">กำลังทำ</option>
+                <option value="done">เสร็จแล้ว</option>
+                <option value="cancel">ยกเลิก</option>
+                <option value="unassigned">ยังไม่มอบหมาย</option>
+              </select>
+              <button type="button" class="btn-sm" id="btn-refresh-orders">รีเฟรช</button>
+            </div>
           </div>
           <div class="admin-table-wrap glass">
             <table class="admin-table" id="orders-table">
@@ -567,14 +614,13 @@
                   <th>เวลา</th>
                   <th>บริการ</th>
                   <th>รายละเอียด</th>
-                  <th>ลูกค้า</th>
-                  <th>UID</th>
+                  <th>ลูกค้า / UID</th>
+                  <th>มอบหมายให้</th>
                   <th>สถานะ</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody id="orders-tbody">
-                <tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์</td></tr>
+                <tr><td colspan="6" class="empty-cell">ยังไม่มีออเดอร์</td></tr>
               </tbody>
             </table>
           </div>

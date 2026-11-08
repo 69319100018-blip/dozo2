@@ -69,6 +69,13 @@
       });
     },
 
+    assignOrder(id, assignedStaffId) {
+      return request(`/api/orders?id=${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ assignedStaffId }),
+      });
+    },
+
     listTeam() {
       return request("/api/team", { method: "GET" });
     },

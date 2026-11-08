@@ -14,6 +14,7 @@ const FARM_PRICES = new Map([
 ]);
 const ALLOWED_SERVICES = new Set(["farm-gem", "material", "abyss", "explore"]);
 const ALLOWED_STATUSES = new Set(["pending", "doing", "done", "cancel"]);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function cleanText(value, max = 1000) {
   return String(value ?? "").trim().slice(0, max);
@@ -71,31 +72,98 @@ async function handler(request) {
     const sql = getSql();
 
     if (request.method === "GET") {
-      const orders = user.role === "admin"
-        ? await sql`
-            SELECT o.id::text AS id, o.order_number AS "orderNumber", o.service,
-              o.summary, u.email AS "customerEmail", o.game_username AS "gameUsername",
-              o.game_uid AS uid, o.status, o.total_price AS "totalPrice",
-              o.details, o.slip_path AS "slipPath", o.attachment_path AS "attachmentPath",
-              o.created_at AS "createdAt"
-            FROM orders o JOIN users u ON u.id = o.customer_id
-            ORDER BY o.created_at DESC LIMIT 500
-          `
-        : await sql`
-            SELECT o.id::text AS id, o.order_number AS "orderNumber", o.service,
-              o.summary, u.email AS "customerEmail", o.game_username AS "gameUsername",
-              o.game_uid AS uid, o.status, o.total_price AS "totalPrice",
-              o.details, o.slip_path AS "slipPath", o.attachment_path AS "attachmentPath",
-              o.created_at AS "createdAt"
-            FROM orders o JOIN users u ON u.id = o.customer_id
-            WHERE o.customer_id = ${user.id}
-            ORDER BY o.created_at DESC LIMIT 100
-          `;
+      let orders;
+      if (user.role === "admin") {
+        orders = await sql`
+          SELECT
+            o.id::text AS id,
+            o.order_number AS "orderNumber",
+            o.service,
+            o.summary,
+            u.email AS "customerEmail",
+            o.game_username AS "gameUsername",
+            o.game_uid AS uid,
+            o.status,
+            o.total_price AS "totalPrice",
+            o.details,
+            o.slip_path AS "slipPath",
+            o.attachment_path AS "attachmentPath",
+            o.assigned_staff_id::text AS "assignedStaffId",
+            s.display_name AS "assignedStaffName",
+            s.email AS "assignedStaffEmail",
+            o.created_at AS "createdAt",
+            o.updated_at AS "updatedAt"
+          FROM orders o
+          JOIN users u ON u.id = o.customer_id
+          LEFT JOIN users s ON s.id = o.assigned_staff_id
+          ORDER BY o.created_at DESC
+          LIMIT 500
+        `;
+      } else if (user.role === "staff") {
+        // ลูกทีมเห็นเฉพาะงานที่แอดมินส่งมอบให้แล้ว
+        orders = await sql`
+          SELECT
+            o.id::text AS id,
+            o.order_number AS "orderNumber",
+            o.service,
+            o.summary,
+            u.email AS "customerEmail",
+            o.game_username AS "gameUsername",
+            o.game_uid AS uid,
+            o.status,
+            o.total_price AS "totalPrice",
+            o.details,
+            o.slip_path AS "slipPath",
+            o.attachment_path AS "attachmentPath",
+            o.assigned_staff_id::text AS "assignedStaffId",
+            s.display_name AS "assignedStaffName",
+            s.email AS "assignedStaffEmail",
+            o.created_at AS "createdAt",
+            o.updated_at AS "updatedAt"
+          FROM orders o
+          JOIN users u ON u.id = o.customer_id
+          LEFT JOIN users s ON s.id = o.assigned_staff_id
+          WHERE o.assigned_staff_id = ${user.id}
+          ORDER BY o.created_at DESC
+          LIMIT 200
+        `;
+      } else {
+        orders = await sql`
+          SELECT
+            o.id::text AS id,
+            o.order_number AS "orderNumber",
+            o.service,
+            o.summary,
+            u.email AS "customerEmail",
+            o.game_username AS "gameUsername",
+            o.game_uid AS uid,
+            o.status,
+            o.total_price AS "totalPrice",
+            o.details,
+            o.slip_path AS "slipPath",
+            o.attachment_path AS "attachmentPath",
+            o.assigned_staff_id::text AS "assignedStaffId",
+            s.display_name AS "assignedStaffName",
+            s.email AS "assignedStaffEmail",
+            o.created_at AS "createdAt",
+            o.updated_at AS "updatedAt"
+          FROM orders o
+          JOIN users u ON u.id = o.customer_id
+          LEFT JOIN users s ON s.id = o.assigned_staff_id
+          WHERE o.customer_id = ${user.id}
+          ORDER BY o.created_at DESC
+          LIMIT 100
+        `;
+      }
       return json({ orders });
     }
 
     if (request.method === "POST") {
       assertSameOrigin(request);
+      if (user.role === "staff") {
+        return json({ error: "บัญชีลูกทีมไม่สามารถสั่งซื้อผ่านระบบนี้ได้" }, 403);
+      }
+
       const body = await request.json();
       const service = cleanText(body.service, 30);
       if (!ALLOWED_SERVICES.has(service)) return json({ error: "ไม่พบบริการนี้" }, 400);
@@ -133,24 +201,95 @@ async function handler(request) {
 
     if (request.method === "PATCH") {
       assertSameOrigin(request);
-      if (user.role !== "admin") return json({ error: "ไม่มีสิทธิ์จัดการออเดอร์" }, 403);
       const id = new URL(request.url).searchParams.get("id");
       const body = await request.json();
-      const status = cleanText(body.status, 20);
-      if (!id || !ALLOWED_STATUSES.has(status)) return json({ error: "ข้อมูลอัปเดตไม่ถูกต้อง" }, 400);
+      if (!id || !UUID_RE.test(id)) return json({ error: "รหัสออเดอร์ไม่ถูกต้อง" }, 400);
 
-      const [updated] = await sql`
-        UPDATE orders SET status = ${status}, updated_at = NOW()
-        WHERE id = ${id}::uuid
-        RETURNING id::text AS id, status
-      `;
-      if (!updated) return json({ error: "ไม่พบออเดอร์นี้" }, 404);
-      return json({ success: true, order: updated });
+      // Admin: เปลี่ยนสถานะ และ/หรือ มอบหมายงาน
+      if (user.role === "admin") {
+        const hasStatus = Object.prototype.hasOwnProperty.call(body, "status");
+        const hasAssign = Object.prototype.hasOwnProperty.call(body, "assignedStaffId");
+
+        if (!hasStatus && !hasAssign) {
+          return json({ error: "ไม่มีข้อมูลที่จะอัปเดต" }, 400);
+        }
+
+        if (hasStatus) {
+          const status = cleanText(body.status, 20);
+          if (!ALLOWED_STATUSES.has(status)) return json({ error: "สถานะไม่ถูกต้อง" }, 400);
+          const [updatedStatus] = await sql`
+            UPDATE orders SET status = ${status}, updated_at = NOW()
+            WHERE id = ${id}::uuid
+            RETURNING id::text AS id, status, assigned_staff_id::text AS "assignedStaffId"
+          `;
+          if (!updatedStatus) return json({ error: "ไม่พบออเดอร์นี้" }, 404);
+          if (!hasAssign) return json({ success: true, order: updatedStatus });
+        }
+
+        if (hasAssign) {
+          const rawStaff = body.assignedStaffId;
+          if (rawStaff === null || rawStaff === "") {
+            const [updated] = await sql`
+              UPDATE orders
+              SET assigned_staff_id = NULL, updated_at = NOW()
+              WHERE id = ${id}::uuid
+              RETURNING id::text AS id, status, assigned_staff_id::text AS "assignedStaffId"
+            `;
+            if (!updated) return json({ error: "ไม่พบออเดอร์นี้" }, 404);
+            return json({ success: true, order: updated });
+          }
+
+          const staffId = cleanText(rawStaff, 64);
+          if (!UUID_RE.test(staffId)) return json({ error: "รหัสลูกทีมไม่ถูกต้อง" }, 400);
+
+          const [staff] = await sql`
+            SELECT id::text AS id FROM users
+            WHERE id = ${staffId}::uuid AND role = 'staff'
+            LIMIT 1
+          `;
+          if (!staff) return json({ error: "ไม่พบลูกทีมนี้ หรือบัญชีไม่ได้เป็น staff" }, 404);
+
+          const [updated] = await sql`
+            UPDATE orders
+            SET assigned_staff_id = ${staffId}::uuid, updated_at = NOW()
+            WHERE id = ${id}::uuid
+            RETURNING id::text AS id, status, assigned_staff_id::text AS "assignedStaffId"
+          `;
+          if (!updated) return json({ error: "ไม่พบออเดอร์นี้" }, 404);
+          return json({ success: true, order: updated });
+        }
+      }
+
+      // Staff: เปลี่ยนสถานะได้เฉพาะงานที่ถูกส่งมอบให้ตัวเองแล้ว
+      if (user.role === "staff") {
+        const status = cleanText(body.status, 20);
+        if (!ALLOWED_STATUSES.has(status)) return json({ error: "สถานะไม่ถูกต้อง" }, 400);
+
+        const [updated] = await sql`
+          UPDATE orders
+          SET status = ${status}, updated_at = NOW()
+          WHERE id = ${id}::uuid
+            AND assigned_staff_id = ${user.id}
+          RETURNING id::text AS id, status, assigned_staff_id::text AS "assignedStaffId"
+        `;
+        if (!updated) {
+          return json({
+            error: "ไม่มีสิทธิ์แก้สถานะนี้ — งานยังไม่ได้ถูกส่งมอบให้คุณ หรือไม่พบออเดอร์",
+          }, 403);
+        }
+        return json({ success: true, order: updated });
+      }
+
+      return json({ error: "ไม่มีสิทธิ์จัดการออเดอร์" }, 403);
     }
 
     return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST, PATCH" });
   } catch (error) {
-    if (error.message === "แพ็กเกจเจมไม่ถูกต้อง" || error.message === "กรุณาเลือกตัวละคร" || error.message === "กรุณาเลือกแพ็กเกจหรือเป้าหมาย") {
+    if (
+      error.message === "แพ็กเกจเจมไม่ถูกต้อง" ||
+      error.message === "กรุณาเลือกตัวละคร" ||
+      error.message === "กรุณาเลือกแพ็กเกจหรือเป้าหมาย"
+    ) {
       return json({ error: error.message }, 400);
     }
     return json({ error: errorMessage(error, "ไม่สามารถบันทึกข้อมูลออเดอร์ได้") }, error.status || 500);
