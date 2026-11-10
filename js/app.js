@@ -110,14 +110,24 @@ const EXPLORE_OPTIONS = [
   { id: "sumeru", label: "Sumeru", sub: "เปิดแผนที่" },
   { id: "fontaine", label: "Fontaine", sub: "เปิดแผนที่" },
   { id: "natlan", label: "Natlan", sub: "เปิดแผนที่" },
-  { id: "all", label: "ทุกภูมิภาค", sub: "100% ทั้งหมด" },
-  { id: "custom-map", label: "กำหนดเอง", sub: "ระบุในรายละเอียด" }
+  { id: "nod-krai", label: "Nod-Krai", sub: "เปิดแผนที่" },
+  { id: "enkanomiya", label: "Enkanomiya", sub: "เปิดแผนที่" },
+  { id: "chasm", label: "The Chasm", sub: "เปิดแผนที่" },
+  { id: "sea-of-bygone", label: "Sea of Bygone Eras", sub: "เปิดแผนที่" },
+  { id: "ancient-sacred-mountain", label: "Ancient Sacred Mountain", sub: "เปิดแผนที่" },
+  { id: "temple-of-space", label: "Temple of Space", sub: "เปิดแผนที่" },
+  { id: "frostmoon", label: "Frostmoon", sub: "เปิดแผนที่" },
 ];
+
+const EXPLORE_RATE_PER_PERCENT = 2; // 1% = 2 ฿
 
 let selectedAbyss = null;
 let hasAbyssSlip = false;
 let selectedExplore = null;
+let selectedExplorePercent = null;
 let hasExploreSlip = false;
+let exploreQrGenerated = false;
+let lastExploreQrAmount = null;
 
 let currentUser = null;
 let isAdmin = false;
@@ -1196,23 +1206,91 @@ function generateAbyssQr() {
   }
 }
 
-function generateExploreQr() {
+function getExploreTotalAmount() {
+  if (!selectedExplore || selectedExplorePercent == null) return null;
+  return selectedExplorePercent * EXPLORE_RATE_PER_PERCENT;
+}
+
+function updateExploreTotalDisplay() {
+  const el = document.getElementById("explore-total-price");
+  const price = getExploreTotalAmount();
+  if (el) el.textContent = price != null ? price.toLocaleString() + " ฿" : "0 ฿";
+}
+
+function resetExploreQr() {
+  exploreQrGenerated = false;
+  lastExploreQrAmount = null;
   const box = document.getElementById("explore-qr-box");
+  const amountLine = document.getElementById("explore-qr-amount-line");
+  if (box) {
+    box.classList.add("qr-box-pending");
+    box.innerHTML = `<p class="qr-note">ยังไม่ได้สร้าง QR</p>`;
+  }
+  if (amountLine) amountLine.textContent = "";
+}
+
+function updateExploreQrButton() {
+  const btn = document.getElementById("btn-generate-explore-qr");
+  const hint = document.getElementById("explore-qr-hint");
+  if (!btn) return;
+  const amount = getExploreTotalAmount();
+  const ready = amount != null && amount > 0;
+  btn.disabled = !ready;
+  if (!ready) {
+    btn.textContent = "สร้าง QR ตามยอดชำระ";
+    if (hint) hint.textContent = "เลือกพื้นที่และเปอร์เซ็นต์ก่อน";
+    return;
+  }
+  btn.textContent = exploreQrGenerated && lastExploreQrAmount === amount
+    ? `สร้าง QR ใหม่ (${amount.toLocaleString()} ฿)`
+    : `สร้าง QR ${amount.toLocaleString()} ฿`;
+  if (hint) {
+    hint.textContent = exploreQrGenerated && lastExploreQrAmount === amount
+      ? `QR ปัจจุบัน: ${amount.toLocaleString()} ฿`
+      : `พร้อมสร้าง QR ยอด ${amount.toLocaleString()} ฿`;
+  }
+}
+
+function generateExploreQr() {
+  const amount = getExploreTotalAmount();
+  const box = document.getElementById("explore-qr-box");
+  const amountLine = document.getElementById("explore-qr-amount-line");
+  if (amount == null || amount <= 0) {
+    alert("กรุณาเลือกพื้นที่และเปอร์เซ็นต์ก่อน");
+    return;
+  }
   if (!promptPayReady || !promptPayId || !window.DozoPromptPay) {
     alert("ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel");
     return;
   }
   if (!box) return;
   try {
-    const payload = window.DozoPromptPay.generatePayload(promptPayId, {});
+    const payload = window.DozoPromptPay.generatePayload(promptPayId, { amount });
     box.classList.remove("qr-box-pending");
-    window.DozoPromptPay.renderQr(box, payload, null);
-    const hint = document.getElementById("explore-qr-hint");
-    if (hint) hint.textContent = "สแกนแล้วระบุยอดในแอปธนาคารตามที่ตกลง";
+    window.DozoPromptPay.renderQr(box, payload, amount);
+    exploreQrGenerated = true;
+    lastExploreQrAmount = amount;
+    if (amountLine) amountLine.textContent = `ยอดใน QR: ${amount.toLocaleString()} ฿`;
+    updateExploreQrButton();
   } catch (err) {
     console.error(err);
     alert(err?.message || "สร้าง QR ไม่สำเร็จ");
   }
+}
+
+function bindExplorePercentButtons() {
+  document.querySelectorAll("#explore-percent-grid .percent-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#explore-percent-grid .percent-item").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedExplorePercent = Number(btn.dataset.percent);
+      const price = getExploreTotalAmount();
+      if (price !== lastExploreQrAmount) resetExploreQr();
+      updateExploreTotalDisplay();
+      updateExploreQrButton();
+      updateExploreSubmitState();
+    });
+  });
 }
 
 function renderAbyssOptions() {
@@ -1235,11 +1313,20 @@ function renderAbyssOptions() {
 
 function renderExploreOptions() {
   selectedExplore = null;
+  selectedExplorePercent = null;
   hasExploreSlip = false;
   selectedExploreSlipFile = null;
+  document.querySelectorAll("#explore-percent-grid .percent-item").forEach((b) => b.classList.remove("selected"));
+  resetExploreQr();
+  updateExploreTotalDisplay();
+  updateExploreQrButton();
   updateExploreSubmitState();
   renderOptionGrid(explorePackageGrid, EXPLORE_OPTIONS, selectedExplore, (opt) => {
     selectedExplore = opt;
+    const price = getExploreTotalAmount();
+    if (price !== lastExploreQrAmount) resetExploreQr();
+    updateExploreTotalDisplay();
+    updateExploreQrButton();
     updateExploreSubmitState();
   });
 }
@@ -1248,7 +1335,9 @@ function updateAbyssSubmitState() {
   if (btnSubmitAbyss) btnSubmitAbyss.disabled = !(selectedAbyss && hasAbyssSlip);
 }
 function updateExploreSubmitState() {
-  if (btnSubmitExplore) btnSubmitExplore.disabled = !(selectedExplore && hasExploreSlip);
+  if (btnSubmitExplore) {
+    btnSubmitExplore.disabled = !(selectedExplore && selectedExplorePercent && hasExploreSlip);
+  }
 }
 
 document.addEventListener("click", (e) => {
@@ -1313,14 +1402,17 @@ abyssForm?.addEventListener("submit", async (e) => {
 
 exploreForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!selectedExplore) { alert("กรุณาเลือกพื้นที่ / เป้าหมาย"); return; }
+  if (!selectedExplore) { alert("กรุณาเลือกพื้นที่"); return; }
+  if (!selectedExplorePercent) { alert("กรุณาเลือกเปอร์เซ็นต์ที่จะสำรวจ"); return; }
   if (!hasExploreSlip || !selectedExploreSlipFile) { document.getElementById("explore-slip-error")?.classList.add("show"); return; }
   const account = readGameAccount("explore");
   const accountError = validateGameAccount(account);
   if (accountError) { alert(accountError); return; }
 
   const details = {
+    packageId: selectedExplore.id,
     package: selectedExplore.label,
+    percent: selectedExplorePercent,
     detail: document.getElementById("explore-detail")?.value.trim() || "",
     prohibitions: document.getElementById("explore-prohibitions")?.value.trim() || "",
     stream: document.querySelector('input[name="explore-stream"]:checked')?.value || "no",
@@ -1333,7 +1425,7 @@ exploreForm?.addEventListener("submit", async (e) => {
   btnSubmitExplore.disabled = true;
   try {
     const saved = await saveOrder({ service: "explore", gameUsername: account.name, gameUid: account.uid, details }, { slipFile: selectedExploreSlipFile });
-    alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nพื้นที่: ${details.package}\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+    alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nพื้นที่: ${details.package} ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1753,5 +1845,6 @@ document.getElementById("btn-refresh-staff")?.addEventListener("click", () => {
 
 // ---------- Start ----------
 window.addEventListener("DOMContentLoaded", () => {
+  bindExplorePercentButtons();
   startLoading();
 });

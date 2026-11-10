@@ -269,6 +269,7 @@ html, body {
 }
 
 .form-group input,
+.form-group select,
 .form-group textarea {
   width: 100%;
   padding: 0.95rem 1.15rem;
@@ -283,7 +284,29 @@ html, body {
 
 .form-group textarea { resize: vertical; min-height: 88px; }
 
+.form-group select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: rgba(0, 0, 0, 0.32);
+  background-image:
+    linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+    linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2.4rem;
+}
+
+.form-group select option {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: var(--primary);
@@ -982,6 +1005,50 @@ html, body {
   opacity: 0.7;
   border: 1px dashed rgba(148, 163, 184, 0.35);
   background: rgba(15, 23, 42, 0.35);
+}
+
+.percent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.percent-item {
+  appearance: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: var(--radius-sm);
+  padding: 1rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s, box-shadow 0.2s;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.percent-item:hover {
+  border-color: rgba(94, 234, 212, 0.35);
+  transform: translateY(-2px);
+}
+
+.percent-item.selected {
+  border-color: rgba(240, 201, 135, 0.7);
+  background: linear-gradient(135deg, rgba(240, 201, 135, 0.14), rgba(94, 234, 212, 0.08));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.percent-label {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.percent-price {
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 
 .upload-area {

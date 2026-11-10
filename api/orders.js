@@ -141,6 +141,38 @@ function buildDetails(service, raw, userRole = "customer") {
     };
   }
 
+  if (service === "explore") {
+    const ALLOWED_REGIONS = new Set([
+      "mondstadt", "liyue", "inazuma", "sumeru", "fontaine", "natlan",
+      "nod-krai", "enkanomiya", "chasm", "sea-of-bygone",
+      "ancient-sacred-mountain", "temple-of-space", "frostmoon",
+    ]);
+    const packageId = cleanText(d.packageId || "", 60).toLowerCase();
+    const packageName = cleanText(d.package, 100);
+    const percent = Number(d.percent);
+    if (!packageId || !ALLOWED_REGIONS.has(packageId)) {
+      throw new Error("พื้นที่สำรวจไม่ถูกต้อง");
+    }
+    if (![50, 75, 100].includes(percent)) {
+      throw new Error("เปอร์เซ็นต์สำรวจต้องเป็น 50 / 75 / 100");
+    }
+    const total = percent * 2; // 1% = 2 ฿
+    const detail = cleanText(d.detail, 1500);
+    const label = packageName || packageId;
+    return {
+      details: {
+        ...details,
+        ...accountFields,
+        packageId,
+        package: label,
+        percent,
+        detail,
+      },
+      totalPrice: total,
+      summary: `${label} ${percent}% · ${total}฿`,
+    };
+  }
+
   const packageName = cleanText(d.package, 100);
   if (!packageName) throw new Error("กรุณาเลือกแพ็กเกจหรือเป้าหมาย");
   const detail = cleanText(d.detail, 1500);
