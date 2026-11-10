@@ -6,7 +6,7 @@ import {
   isPrivateUploadPathForUser,
   json,
 } from "../lib/server.js";
-import { notifyNewOrder } from "../lib/line.js";
+import { notifyNewOrderAll } from "../lib/notify.js";
 
 const FARM_PRICES = new Map([
   [160, 10], [320, 18], [480, 29], [680, 36], [800, 49],
@@ -237,9 +237,9 @@ async function handler(request) {
           status, total_price AS "totalPrice", created_at AS "createdAt"
       `;
 
-      // แจ้งเตือน LINE (ไม่บล็อกการสร้างออเดอร์ถ้าส่งไม่สำเร็จ)
+      // แจ้งเตือน LINE + Discord (ไม่บล็อกการสร้างออเดอร์ถ้าส่งไม่สำเร็จ)
       try {
-        await notifyNewOrder({
+        await notifyNewOrderAll({
           orderNumber: order.orderNumber,
           service: order.service,
           summary: order.summary,
@@ -249,7 +249,7 @@ async function handler(request) {
           totalPrice: order.totalPrice,
         });
       } catch (notifyError) {
-        console.error("[LINE] notifyNewOrder failed", notifyError);
+        console.error("[notify] notifyNewOrderAll failed", notifyError);
       }
 
       return json({ success: true, order }, 201);
