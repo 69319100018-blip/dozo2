@@ -532,27 +532,24 @@ document.querySelectorAll("[data-goto]").forEach(btn => {
   btn.addEventListener("click", () => showView(btn.dataset.goto));
 });
 
-// Service cards
+// Service cards — เปิดบนเว็บเฉพาะ farm-gem / abyss / explore
+// หาวัสดุ + ปั้นตัวละคร ให้สอบถามที่ Facebook เท่านั้น
 document.querySelectorAll(".service-card").forEach(card => {
   const btn = card.querySelector(".btn-service");
-  btn.addEventListener("click", () => {
+  btn?.addEventListener("click", () => {
     const service = card.dataset.service;
     if (service === "farm-gem") {
       showView("order-farm");
       renderPackages();
-    } else if (service === "material") {
-      showView("order-material");
-      renderMaterialTypes();
-    } else if (service === "build-char") {
-      showView("order-build");
-      renderBuildCharacters();
-      renderBuildGoals();
     } else if (service === "abyss") {
       showView("order-abyss");
       renderAbyssOptions();
     } else if (service === "explore") {
       showView("order-explore");
       renderExploreOptions();
+    } else if (service === "material" || service === "build-char") {
+      alert("บริการนี้รับเฉพาะทาง Facebook หน้าร้าน กรุณาทักสอบถามราคาโดยตรง");
+      showView("contact");
     } else {
       alert("บริการนี้กำลังเตรียมเปิดให้ใช้งานเร็ว ๆ นี้");
     }
