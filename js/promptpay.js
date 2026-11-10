@@ -6,27 +6,44 @@
 (function (global) {
   "use strict";
 
-  function formatTarget(id) {
-    const digits = String(id || "").replace(/\D/g, "");
+  /**
+   * แปลง PromptPay ID เป็นค่าใน payload + ชนิดปลายทาง
+   * เบอร์มือถือต้องใช้ tag 01 (ค่า 0066 + 9 หลักหลังตัด 0)
+   * เลขบัตร/ภาษี 13 หลักใช้ tag 02
+   * ห้ามเดาชนิดจากความยาวหลังแปลง — เบอร์ที่แปลงแล้วก็ยาว 13 เหมือนบัตร
+   */
+  function resolveTarget(id) {
+    const raw = String(id || "").trim();
+    const digits = raw.replace(/\D/g, "");
     if (!digits) return null;
 
-    // เบอร์มือถือ 10 หลัก → 0066xxxxxxxxx
+    // เบอร์ 10 หลัก เช่น 0802011319 → 0066802011319 (mobile tag 01)
     if (digits.length === 10 && digits.startsWith("0")) {
-      return "0066" + digits.slice(1);
+      return { type: "mobile", value: "0066" + digits.slice(1) };
     }
-    // เบอร์ที่ใส่ 66 นำหน้าแล้ว
+    // เบอร์แบบ 66xxxxxxxxx (11 หลัก)
     if (digits.length === 11 && digits.startsWith("66")) {
-      return "00" + digits;
+      return { type: "mobile", value: "00" + digits };
     }
-    // เลขบัตรประชาชน / ภาษี 13 หลัก
+    // เบอร์ที่ใส่ 0066 มาแล้ว (13 หลัก ขึ้นต้น 0066)
+    if (digits.length === 13 && digits.startsWith("0066")) {
+      return { type: "mobile", value: digits };
+    }
+    // เลขบัตรประชาชน / เลขผู้เสียภาษี 13 หลัก
     if (digits.length === 13) {
-      return digits;
+      return { type: "nationalId", value: digits };
     }
-    // e-Wallet / อื่นๆ ที่ยาวพอ
+    // e-Wallet / อื่นๆ
     if (digits.length >= 15) {
-      return digits;
+      return { type: "ewallet", value: digits };
     }
     return null;
+  }
+
+  function targetTag(type) {
+    if (type === "nationalId") return "02";
+    if (type === "ewallet") return "03";
+    return "01"; // mobile
   }
 
   function tlv(tag, value) {
@@ -54,7 +71,7 @@
    * @param {{ amount?: number }} options amount เป็นบาท (ทศนิยมได้)
    */
   function generatePayload(targetId, options = {}) {
-    const target = formatTarget(targetId);
+    const target = resolveTarget(targetId);
     if (!target) throw new Error("PromptPay ID ไม่ถูกต้อง");
 
     const amount =
@@ -63,10 +80,11 @@
         : null;
 
     // Tag 29: Merchant Account Information (PromptPay)
-    // AID 0016A000000677010111 = credit transfer
+    // AID A000000677010111 = credit transfer
+    // 01 = เบอร์มือถือ, 02 = เลขบัตร/ภาษี, 03 = e-Wallet
     const merchantInfo =
       tlv("00", "A000000677010111") +
-      tlv(target.length === 13 ? "02" : "01", target);
+      tlv(targetTag(target.type), target.value);
 
     let payload = "";
     payload += tlv("00", "01"); // Payload Format Indicator
@@ -173,6 +191,6 @@
     generatePayload,
     renderQr,
     updateAllQrBoxes,
-    formatTarget,
+    resolveTarget,
   };
 })(typeof window !== "undefined" ? window : globalThis);
