@@ -6,6 +6,7 @@ import {
   isPrivateUploadPathForUser,
   json,
 } from "../lib/server.js";
+import { notifyNewOrder } from "../lib/line.js";
 
 const FARM_PRICES = new Map([
   [160, 10], [320, 18], [480, 29], [680, 36], [800, 49],
@@ -235,6 +236,22 @@ async function handler(request) {
           summary, game_username AS "gameUsername", game_uid AS uid,
           status, total_price AS "totalPrice", created_at AS "createdAt"
       `;
+
+      // แจ้งเตือน LINE (ไม่บล็อกการสร้างออเดอร์ถ้าส่งไม่สำเร็จ)
+      try {
+        await notifyNewOrder({
+          orderNumber: order.orderNumber,
+          service: order.service,
+          summary: order.summary,
+          gameUsername: order.gameUsername,
+          gameUid: order.uid,
+          customerEmail: user.email,
+          totalPrice: order.totalPrice,
+        });
+      } catch (notifyError) {
+        console.error("[LINE] notifyNewOrder failed", notifyError);
+      }
+
       return json({ success: true, order }, 201);
     }
 

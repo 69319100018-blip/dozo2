@@ -120,6 +120,25 @@ WHERE email = lower('staff@example.com')
 - `PATCH /api/orders?id=...` — แอดมินเปลี่ยนสถานะหรือมอบหมาย `assignedStaffId`; staff เปลี่ยนสถานะได้เฉพาะงานของตัวเอง
 - `POST /api/upload` — อัปโหลดภาพไปยัง Private Blob
 - `GET /api/upload?pathname=...` — เจ้าของออเดอร์ / แอดมิน / staff ที่ถูกมอบหมายงานนั้น
+- `POST /api/line-webhook` — รับ event จาก LINE (ใช้หา userId / groupId)
+
+### แจ้งเตือน LINE เมื่อมีออเดอร์ใหม่
+
+LINE Notify ปิดบริการแล้ว (มี.ค. 2025) ระบบนี้ใช้ **LINE Official Account + Messaging API** แทน
+
+1. สร้าง LINE Official Account แล้วเปิดใช้ Messaging API ใน [LINE Developers](https://developers.line.biz/)
+2. คัดลอก **Channel access token** (long-lived) และ **Channel secret**
+3. ตั้ง Environment Variables ใน Vercel:
+   - `LINE_CHANNEL_ACCESS_TOKEN`
+   - `LINE_CHANNEL_SECRET` (แนะนำ)
+   - `LINE_NOTIFY_TO` = userId หรือ groupId (หลายคนคั่นด้วย comma)
+4. ตั้ง Webhook URL เป็น `https://โดเมนของคุณ/api/line-webhook` แล้วเปิดใช้ Webhook
+5. ให้แอดมิน**เพิ่มเพื่อน OA** (หรือเชิญ OA เข้ากลุ่มร้าน) → ดู Vercel Logs จะเห็น
+   - `[LINE] follow userId=Uxxxx` หรือ `[LINE] join groupId=Cxxxx`
+6. นำ ID นั้นไปใส่ `LINE_NOTIFY_TO` แล้ว Redeploy / รอ env มีผล
+
+เมื่อลูกค้าสร้างออเดอร์สำเร็จ ระบบจะ push ข้อความไป LINE อัตโนมัติ  
+ถ้ายังไม่ได้ตั้งค่า LINE การสั่งซื้อยังทำงานปกติ (ข้ามการแจ้งเตือน)
 
 ### มุมมองตามบทบาท
 
