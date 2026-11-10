@@ -104,27 +104,31 @@ const ABYSS_OPTIONS = [
 ];
 
 const EXPLORE_OPTIONS = [
-  { id: "mondstadt", label: "Mondstadt", sub: "เปิดแผนที่" },
-  { id: "liyue", label: "Liyue", sub: "เปิดแผนที่" },
-  { id: "inazuma", label: "Inazuma", sub: "เปิดแผนที่" },
-  { id: "sumeru", label: "Sumeru", sub: "เปิดแผนที่" },
-  { id: "fontaine", label: "Fontaine", sub: "เปิดแผนที่" },
-  { id: "natlan", label: "Natlan", sub: "เปิดแผนที่" },
-  { id: "nod-krai", label: "Nod-Krai", sub: "เปิดแผนที่" },
-  { id: "enkanomiya", label: "Enkanomiya", sub: "เปิดแผนที่" },
-  { id: "chasm", label: "The Chasm", sub: "เปิดแผนที่" },
-  { id: "sea-of-bygone", label: "Sea of Bygone Eras", sub: "เปิดแผนที่" },
-  { id: "ancient-sacred-mountain", label: "Ancient Sacred Mountain", sub: "เปิดแผนที่" },
-  { id: "temple-of-space", label: "Temple of Space", sub: "เปิดแผนที่" },
-  { id: "frostmoon", label: "Frostmoon", sub: "เปิดแผนที่" },
-];
+  { id: "mondstadt", label: "Mondstadt", areas: 6 },
+  { id: "liyue", label: "Liyue", areas: 9 },
+  { id: "inazuma", label: "Inazuma", areas: 6 },
+  { id: "sumeru", label: "Sumeru", areas: 13 },
+  { id: "fontaine", label: "Fontaine", areas: 8 },
+  { id: "natlan", label: "Natlan", areas: 9 },
+  { id: "nod-krai", label: "Nod-Krai", areas: 7 },
+  { id: "enkanomiya", label: "Enkanomiya", areas: 3 },
+  { id: "chasm", label: "The Chasm", areas: 3 },
+  { id: "sea-of-bygone", label: "Sea of Bygone Eras", areas: 3 },
+  { id: "ancient-sacred-mountain", label: "Ancient Sacred Mountain", areas: 6 },
+  { id: "temple-of-space", label: "Temple of Space", areas: 3 },
+  { id: "frostmoon", label: "Frostmoon", areas: 3 },
+].map((opt) => ({ ...opt, sub: `${opt.areas} พื้นที่` }));
 
-const EXPLORE_RATE_PER_PERCENT = 2; // 1% = 2 ฿
+const EXPLORE_RATE_PER_PERCENT = 2; // 1% = 2 ฿ ต่อ 1 พื้นที่
+const EXPLORE_AREA_LIMITS = Object.fromEntries(
+  EXPLORE_OPTIONS.map((opt) => [opt.id, opt.areas])
+);
 
 let selectedAbyss = null;
 let hasAbyssSlip = false;
 let selectedExplore = null;
 let selectedExplorePercent = null;
+let selectedExploreAreaCount = null;
 let hasExploreSlip = false;
 let exploreQrGenerated = false;
 let lastExploreQrAmount = null;
@@ -1207,14 +1211,75 @@ function generateAbyssQr() {
 }
 
 function getExploreTotalAmount() {
-  if (!selectedExplore || selectedExplorePercent == null) return null;
-  return selectedExplorePercent * EXPLORE_RATE_PER_PERCENT;
+  if (!selectedExplore || selectedExplorePercent == null || selectedExploreAreaCount == null) return null;
+  return selectedExploreAreaCount * selectedExplorePercent * EXPLORE_RATE_PER_PERCENT;
+}
+
+function updateExploreCalcBox() {
+  const regionEl = document.getElementById("explore-calc-region");
+  const areasEl = document.getElementById("explore-calc-areas");
+  const percentEl = document.getElementById("explore-calc-percent");
+  const formulaEl = document.getElementById("explore-calc-formula");
+  const regionHint = document.getElementById("explore-region-hint");
+  if (regionEl) regionEl.textContent = selectedExplore ? selectedExplore.label : "-";
+  if (areasEl) {
+    areasEl.textContent = selectedExploreAreaCount != null
+      ? `${selectedExploreAreaCount} / ${selectedExplore?.areas || "-"}`
+      : "-";
+  }
+  if (percentEl) percentEl.textContent = selectedExplorePercent != null ? `${selectedExplorePercent}%` : "-";
+  if (formulaEl) {
+    if (selectedExploreAreaCount != null && selectedExplorePercent != null) {
+      const total = getExploreTotalAmount();
+      formulaEl.textContent = `${selectedExploreAreaCount} × ${selectedExplorePercent} × 2 = ${total?.toLocaleString() || 0} ฿`;
+    } else {
+      formulaEl.textContent = "จำนวนพื้นที่ × % × 2 ฿";
+    }
+  }
+  if (regionHint) {
+    regionHint.textContent = selectedExplore
+      ? `${selectedExplore.label} มีทั้งหมด ${selectedExplore.areas} พื้นที่`
+      : "กดเลือกเมืองเพื่อดูจำนวนพื้นที่ที่มี";
+  }
 }
 
 function updateExploreTotalDisplay() {
   const el = document.getElementById("explore-total-price");
   const price = getExploreTotalAmount();
   if (el) el.textContent = price != null ? price.toLocaleString() + " ฿" : "0 ฿";
+  updateExploreCalcBox();
+}
+
+function renderExploreAreaCountButtons() {
+  const grid = document.getElementById("explore-area-count-grid");
+  const hint = document.getElementById("explore-area-hint");
+  if (!grid) return;
+  grid.innerHTML = "";
+  selectedExploreAreaCount = null;
+  if (!selectedExplore) {
+    if (hint) hint.textContent = "เลือกเมืองก่อน ระบบจะแสดงจำนวนพื้นที่ของเมืองนั้น";
+    return;
+  }
+  const max = selectedExplore.areas;
+  if (hint) hint.textContent = `${selectedExplore.label} มี ${max} พื้นที่ — เลือกจำนวนที่ต้องการสำรวจ`;
+  for (let n = 1; n <= max; n++) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "area-count-item";
+    btn.dataset.count = String(n);
+    btn.innerHTML = `<span class="area-count-num">${n}</span><span class="area-count-label">พื้นที่</span>`;
+    btn.addEventListener("click", () => {
+      grid.querySelectorAll(".area-count-item").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedExploreAreaCount = n;
+      const price = getExploreTotalAmount();
+      if (price !== lastExploreQrAmount) resetExploreQr();
+      updateExploreTotalDisplay();
+      updateExploreQrButton();
+      updateExploreSubmitState();
+    });
+    grid.appendChild(btn);
+  }
 }
 
 function resetExploreQr() {
@@ -1238,7 +1303,7 @@ function updateExploreQrButton() {
   btn.disabled = !ready;
   if (!ready) {
     btn.textContent = "สร้าง QR ตามยอดชำระ";
-    if (hint) hint.textContent = "เลือกพื้นที่และเปอร์เซ็นต์ก่อน";
+    if (hint) hint.textContent = "เลือกเมือง จำนวนพื้นที่ และเปอร์เซ็นต์ก่อน";
     return;
   }
   btn.textContent = exploreQrGenerated && lastExploreQrAmount === amount
@@ -1256,7 +1321,7 @@ function generateExploreQr() {
   const box = document.getElementById("explore-qr-box");
   const amountLine = document.getElementById("explore-qr-amount-line");
   if (amount == null || amount <= 0) {
-    alert("กรุณาเลือกพื้นที่และเปอร์เซ็นต์ก่อน");
+    alert("กรุณาเลือกเมือง จำนวนพื้นที่ และเปอร์เซ็นต์ก่อน");
     return;
   }
   if (!promptPayReady || !promptPayId || !window.DozoPromptPay) {
@@ -1314,15 +1379,18 @@ function renderAbyssOptions() {
 function renderExploreOptions() {
   selectedExplore = null;
   selectedExplorePercent = null;
+  selectedExploreAreaCount = null;
   hasExploreSlip = false;
   selectedExploreSlipFile = null;
   document.querySelectorAll("#explore-percent-grid .percent-item").forEach((b) => b.classList.remove("selected"));
+  renderExploreAreaCountButtons();
   resetExploreQr();
   updateExploreTotalDisplay();
   updateExploreQrButton();
   updateExploreSubmitState();
   renderOptionGrid(explorePackageGrid, EXPLORE_OPTIONS, selectedExplore, (opt) => {
     selectedExplore = opt;
+    renderExploreAreaCountButtons();
     const price = getExploreTotalAmount();
     if (price !== lastExploreQrAmount) resetExploreQr();
     updateExploreTotalDisplay();
@@ -1336,7 +1404,7 @@ function updateAbyssSubmitState() {
 }
 function updateExploreSubmitState() {
   if (btnSubmitExplore) {
-    btnSubmitExplore.disabled = !(selectedExplore && selectedExplorePercent && hasExploreSlip);
+    btnSubmitExplore.disabled = !(selectedExplore && selectedExploreAreaCount && selectedExplorePercent && hasExploreSlip);
   }
 }
 
@@ -1402,7 +1470,8 @@ abyssForm?.addEventListener("submit", async (e) => {
 
 exploreForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!selectedExplore) { alert("กรุณาเลือกพื้นที่"); return; }
+  if (!selectedExplore) { alert("กรุณาเลือกเมือง"); return; }
+  if (!selectedExploreAreaCount) { alert("กรุณาเลือกจำนวนพื้นที่"); return; }
   if (!selectedExplorePercent) { alert("กรุณาเลือกเปอร์เซ็นต์ที่จะสำรวจ"); return; }
   if (!hasExploreSlip || !selectedExploreSlipFile) { document.getElementById("explore-slip-error")?.classList.add("show"); return; }
   const account = readGameAccount("explore");
@@ -1412,6 +1481,8 @@ exploreForm?.addEventListener("submit", async (e) => {
   const details = {
     packageId: selectedExplore.id,
     package: selectedExplore.label,
+    areaCount: selectedExploreAreaCount,
+    areaMax: selectedExplore.areas,
     percent: selectedExplorePercent,
     detail: document.getElementById("explore-detail")?.value.trim() || "",
     prohibitions: document.getElementById("explore-prohibitions")?.value.trim() || "",
@@ -1425,7 +1496,7 @@ exploreForm?.addEventListener("submit", async (e) => {
   btnSubmitExplore.disabled = true;
   try {
     const saved = await saveOrder({ service: "explore", gameUsername: account.name, gameUid: account.uid, details }, { slipFile: selectedExploreSlipFile });
-    alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nพื้นที่: ${details.package} ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+    alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเมือง: ${details.package}\nพื้นที่: ${details.areaCount}/${details.areaMax} · ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
   } catch (error) {
     await handleOrderError(error);
   } finally {

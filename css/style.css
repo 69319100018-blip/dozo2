@@ -1051,6 +1051,71 @@ html, body {
   color: var(--text-muted);
 }
 
+.area-count-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.65rem;
+}
+
+.area-count-item {
+  appearance: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.4rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s, box-shadow 0.2s;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.area-count-item:hover {
+  border-color: rgba(94, 234, 212, 0.35);
+  transform: translateY(-2px);
+}
+
+.area-count-item.selected {
+  border-color: rgba(240, 201, 135, 0.7);
+  background: linear-gradient(135deg, rgba(240, 201, 135, 0.14), rgba(94, 234, 212, 0.08));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.area-count-num {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.1;
+}
+
+.area-count-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.explore-calc-box {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.explore-calc-line {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.explore-calc-line strong {
+  color: var(--text);
+}
+
+
 .upload-area {
   position: relative;
   border: 2px dashed rgba(255, 255, 255, 0.18);

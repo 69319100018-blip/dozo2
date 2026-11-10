@@ -142,21 +142,37 @@ function buildDetails(service, raw, userRole = "customer") {
   }
 
   if (service === "explore") {
-    const ALLOWED_REGIONS = new Set([
-      "mondstadt", "liyue", "inazuma", "sumeru", "fontaine", "natlan",
-      "nod-krai", "enkanomiya", "chasm", "sea-of-bygone",
-      "ancient-sacred-mountain", "temple-of-space", "frostmoon",
-    ]);
+    const REGION_AREAS = {
+      mondstadt: 6,
+      liyue: 9,
+      inazuma: 6,
+      sumeru: 13,
+      fontaine: 8,
+      natlan: 9,
+      "nod-krai": 7,
+      enkanomiya: 3,
+      chasm: 3,
+      "sea-of-bygone": 3,
+      "ancient-sacred-mountain": 6,
+      "temple-of-space": 3,
+      frostmoon: 3,
+    };
     const packageId = cleanText(d.packageId || "", 60).toLowerCase();
     const packageName = cleanText(d.package, 100);
     const percent = Number(d.percent);
-    if (!packageId || !ALLOWED_REGIONS.has(packageId)) {
+    const areaCount = Number(d.areaCount);
+    const maxAreas = REGION_AREAS[packageId];
+    if (!packageId || maxAreas == null) {
       throw new Error("พื้นที่สำรวจไม่ถูกต้อง");
     }
     if (![50, 75, 100].includes(percent)) {
       throw new Error("เปอร์เซ็นต์สำรวจต้องเป็น 50 / 75 / 100");
     }
-    const total = percent * 2; // 1% = 2 ฿
+    if (!Number.isInteger(areaCount) || areaCount < 1 || areaCount > maxAreas) {
+      throw new Error(`จำนวนพื้นที่ต้องอยู่ระหว่าง 1–${maxAreas}`);
+    }
+    // 1% = 2 ฿ ต่อ 1 พื้นที่ → ราคา = พื้นที่ × % × 2
+    const total = areaCount * percent * 2;
     const detail = cleanText(d.detail, 1500);
     const label = packageName || packageId;
     return {
@@ -165,11 +181,13 @@ function buildDetails(service, raw, userRole = "customer") {
         ...accountFields,
         packageId,
         package: label,
+        areaCount,
+        areaMax: maxAreas,
         percent,
         detail,
       },
       totalPrice: total,
-      summary: `${label} ${percent}% · ${total}฿`,
+      summary: `${label} ${areaCount}/${maxAreas} พื้นที่ · ${percent}% · ${total}฿`,
     };
   }
 

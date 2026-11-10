@@ -662,39 +662,54 @@
 
         <form id="explore-form" class="order-form">
           <section class="form-section glass">
-            <h3 class="section-title">1. เลือกพื้นที่</h3>
+            <h3 class="section-title">1. เลือกเมือง / ภูมิภาค</h3>
             <div class="package-grid" id="explore-package-grid"></div>
-            <div class="form-group" style="margin-top:0.8rem">
+            <p class="hint" id="explore-region-hint" style="margin-top:0.75rem">กดเลือกเมืองเพื่อดูจำนวนพื้นที่ที่มี</p>
+          </section>
+
+          <section class="form-section glass" id="explore-area-section">
+            <h3 class="section-title">2. เลือกจำนวนพื้นที่</h3>
+            <p class="hint" id="explore-area-hint" style="margin-bottom:0.75rem">เลือกเมืองก่อน ระบบจะแสดงจำนวนพื้นที่ของเมืองนั้น</p>
+            <div class="area-count-grid" id="explore-area-count-grid"></div>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">3. เลือกเปอร์เซ็นต์ต่อพื้นที่</h3>
+            <p class="hint" style="margin-bottom:0.75rem">
+              เรท <strong>1% = 2 ฿</strong> ต่อ 1 พื้นที่ · แต่ละพื้นที่มีการสำรวจสูงสุด 100%
+            </p>
+            <div class="percent-grid" id="explore-percent-grid">
+              <button type="button" class="percent-item" data-percent="50">
+                <span class="percent-label">50%</span>
+                <span class="percent-price">100 ฿ / พื้นที่</span>
+              </button>
+              <button type="button" class="percent-item" data-percent="75">
+                <span class="percent-label">75%</span>
+                <span class="percent-price">150 ฿ / พื้นที่</span>
+              </button>
+              <button type="button" class="percent-item" data-percent="100">
+                <span class="percent-label">100%</span>
+                <span class="percent-price">200 ฿ / พื้นที่</span>
+              </button>
+            </div>
+            <div class="explore-calc-box" id="explore-calc-box">
+              <div class="explore-calc-line">เมือง: <strong id="explore-calc-region">-</strong></div>
+              <div class="explore-calc-line">จำนวนพื้นที่: <strong id="explore-calc-areas">-</strong></div>
+              <div class="explore-calc-line">เปอร์เซ็นต์: <strong id="explore-calc-percent">-</strong></div>
+              <div class="explore-calc-line">สูตร: <span id="explore-calc-formula">พื้นที่ × % × 2 ฿</span></div>
+            </div>
+            <div class="price-summary" style="margin-top:1rem">
+              <span>ยอดที่ต้องชำระ:</span>
+              <strong id="explore-total-price">0 ฿</strong>
+            </div>
+            <div class="form-group" style="margin-top:0.9rem">
               <label for="explore-detail">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
               <textarea id="explore-detail" rows="2" placeholder="เช่น เน้นเก็บหีบ, เปิดจุดวาร์ป, เก็บ Oculus ฯลฯ"></textarea>
             </div>
           </section>
 
           <section class="form-section glass">
-            <h3 class="section-title">2. เลือกเปอร์เซ็นต์ที่จะสำรวจ</h3>
-            <p class="hint" style="margin-bottom:0.75rem">เรท <strong>1% = 2 ฿</strong> ต่อพื้นที่</p>
-            <div class="percent-grid" id="explore-percent-grid">
-              <button type="button" class="percent-item" data-percent="50">
-                <span class="percent-label">50%</span>
-                <span class="percent-price">100 ฿</span>
-              </button>
-              <button type="button" class="percent-item" data-percent="75">
-                <span class="percent-label">75%</span>
-                <span class="percent-price">150 ฿</span>
-              </button>
-              <button type="button" class="percent-item" data-percent="100">
-                <span class="percent-label">100%</span>
-                <span class="percent-price">200 ฿</span>
-              </button>
-            </div>
-            <div class="price-summary" style="margin-top:1rem">
-              <span>ยอดที่ต้องชำระ:</span>
-              <strong id="explore-total-price">0 ฿</strong>
-            </div>
-          </section>
-
-          <section class="form-section glass">
-            <h3 class="section-title">3. ข้อมูลบัญชีเกม</h3>
+            <h3 class="section-title">4. ข้อมูลบัญชีเกม</h3>
             <div class="form-row">
               <div class="form-group">
                 <label for="explore-game-name">1. ชื่อในเกม</label>
@@ -735,7 +750,7 @@
           </section>
 
           <section class="form-section glass">
-            <h3 class="section-title">4. ข้อห้าม &amp; การสตรีมจอ</h3>
+            <h3 class="section-title">5. ข้อห้าม &amp; การสตรีมจอ</h3>
             <div class="form-group">
               <label for="explore-prohibitions">ระบุสิ่งที่ห้ามทำในงานนี้ (ถ้ามี)</label>
               <textarea id="explore-prohibitions" rows="2" placeholder="เช่น ห้ามเปิดหีบบางจุด ฯลฯ"></textarea>
@@ -753,8 +768,8 @@
           </section>
 
           <section class="form-section glass">
-            <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
-            <p class="hint">เลือกพื้นที่ + เปอร์เซ็นต์ แล้วกดสร้าง QR ตามยอด จากนั้นอัปโหลดสลิป</p>
+            <h3 class="section-title">6. ชำระเงิน &amp; อัปโหลดสลิป</h3>
+            <p class="hint">เลือกเมือง + จำนวนพื้นที่ + เปอร์เซ็นต์ แล้วกดสร้าง QR ตามยอด จากนั้นอัปโหลดสลิป</p>
             <div class="qr-generate-row">
               <button type="button" class="btn-generate-qr" id="btn-generate-explore-qr" disabled>
                 สร้าง QR ตามยอดชำระ
