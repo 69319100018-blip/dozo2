@@ -943,12 +943,107 @@ html, body {
   margin-bottom: 1.2rem;
 }
 
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.2rem;
+}
+
+.contact-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.contact-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+}
+
+.contact-btn-icon {
+  flex: 0 0 auto;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.75rem;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.contact-btn-facebook .contact-btn-icon {
+  background: #1877f2;
+  font-size: 1.35rem;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.contact-btn-line .contact-btn-icon {
+  background: #06c755;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.contact-btn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.contact-btn-body strong {
+  font-size: 1.02rem;
+}
+
+.contact-btn-body small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-btn-go {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 .contact-card {
   text-align: left;
   line-height: 1.8;
+  padding: 1.4rem 1.3rem;
 }
 
 .contact-card p { margin-bottom: 0.6rem; }
+
+.contact-note-title {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+}
+
+.contact-note-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--text-muted);
+}
+
+.contact-note-list li {
+  margin-bottom: 0.35rem;
+}
+
+.contact-note-list strong {
+  color: inherit;
+}
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 700px) {
