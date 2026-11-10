@@ -24,6 +24,10 @@
   }
 
   window.DozoAPI = {
+    async getConfig() {
+      return request("/api/config", { method: "GET" });
+    },
+
     async me() {
       const result = await request("/api/auth", { method: "GET" });
       return result.user || null;

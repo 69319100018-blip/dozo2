@@ -235,10 +235,16 @@
           <!-- ชำระเงิน + สลิป -->
           <section class="form-section glass">
             <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
-            <p class="hint">เลือกแพ็กเกจแล้วระบบจะสร้าง QR PromptPay ตามยอดชำระอัตโนมัติ จากนั้นอัปโหลดสลิป</p>
-            
-            <div class="qr-box" data-qr="dynamic" id="farm-qr-box">
-              <p class="qr-note">เลือกแพ็กเกจเพื่อสร้าง QR ตามยอดชำระ</p>
+            <p class="hint">เลือกแพ็กเกจ แล้วกดปุ่มสร้าง QR PromptPay ตามยอด จากนั้นอัปโหลดสลิป</p>
+
+            <div class="qr-generate-row">
+              <button type="button" class="btn-generate-qr" id="btn-generate-farm-qr" disabled>
+                สร้าง QR ตามยอดชำระ
+              </button>
+              <span class="qr-generate-hint" id="farm-qr-hint">เลือกแพ็กเกจก่อน แล้วกดปุ่มเพื่อสร้าง QR</span>
+            </div>
+            <div class="qr-box qr-box-pending" data-qr="dynamic" id="farm-qr-box">
+              <p class="qr-note">ยังไม่ได้สร้าง QR</p>
             </div>
             <p class="qr-amount-line" id="farm-qr-amount-line"></p>
 
