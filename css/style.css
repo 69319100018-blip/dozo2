@@ -512,6 +512,35 @@ html, body {
   gap: 1.35rem;
 }
 
+.offline-services-note {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--radius);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.offline-services-note h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--gold);
+}
+
+.offline-services-note p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  max-width: 42rem;
+}
+
+.offline-services-note .btn-service {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
 .service-card {
   border-radius: var(--radius);
   padding: 1.7rem 1.45rem;
