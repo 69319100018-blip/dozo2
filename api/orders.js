@@ -53,6 +53,14 @@ function buildDetails(service, raw, userRole = "customer") {
     stream: cleanStream(d.stream),
   };
 
+  const accountFields = {
+    gameName: cleanText(d.gameName, 100) || null,
+    server: cleanText(d.server, 40) || null,
+    loginId: cleanText(d.loginId, 120) || null,
+    gamePass: cleanText(d.gamePass, 200) || null,
+    ar: d.ar != null && Number.isFinite(Number(d.ar)) ? Number(d.ar) : null,
+  };
+
   if (service === "farm-gem") {
     const gems = Number(d.gems);
     const priceMap = getFarmPriceMap(userRole);
@@ -61,7 +69,7 @@ function buildDetails(service, raw, userRole = "customer") {
     const basePrice = priceMap.get(gems);
     const total = rush ? Math.round(basePrice * 1.3) : basePrice;
     return {
-      details: { ...details, gems, rush, memberPrice: isMemberRole(userRole) },
+      details: { ...details, ...accountFields, gems, rush, memberPrice: isMemberRole(userRole) },
       totalPrice: total,
       summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""} · ${total}฿`,
     };
@@ -110,11 +118,34 @@ function buildDetails(service, raw, userRole = "customer") {
     };
   }
 
+  if (service === "abyss") {
+    const ABYSS_PRICES = new Map([
+      ["floor-9-10", 30],
+      ["floor-9-11", 60],
+      ["floor-9-12", 120],
+      ["floor-11-12", 100],
+      ["full-36", 170],
+    ]);
+    const packageId = cleanText(d.packageId || d.package, 40);
+    const packageName = cleanText(d.package, 100);
+    if (!packageId || !ABYSS_PRICES.has(packageId)) {
+      throw new Error("แพ็กเกจ Abyss ไม่ถูกต้อง");
+    }
+    const total = ABYSS_PRICES.get(packageId);
+    const detail = cleanText(d.detail, 1500);
+    const label = packageName || packageId;
+    return {
+      details: { ...details, ...accountFields, packageId, package: label, detail },
+      totalPrice: total,
+      summary: `${label} · ${total}฿`,
+    };
+  }
+
   const packageName = cleanText(d.package, 100);
   if (!packageName) throw new Error("กรุณาเลือกแพ็กเกจหรือเป้าหมาย");
   const detail = cleanText(d.detail, 1500);
   return {
-    details: { ...details, package: packageName, detail },
+    details: { ...details, ...accountFields, package: packageName, detail },
     totalPrice: null,
     summary: packageName + (detail ? ` · ${detail}` : ""),
   };

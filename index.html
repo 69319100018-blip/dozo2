@@ -152,9 +152,12 @@
         </section>
 
         <section class="offline-services-note glass">
-          <h3>หาวัสดุ / ปั้นตัวละคร</h3>
-          <p>บริการนี้ยังไม่เปิดสั่งผ่านเว็บ เพราะราคาขึ้นกับรายการวัสดุแต่ละชิ้น — กรุณาสอบถามและสั่งผ่าน <strong>Facebook หน้าร้าน</strong> โดยตรง</p>
-          <a class="btn-service" href="https://www.facebook.com/meejai.sutan" target="_blank" rel="noopener noreferrer">สอบถามทาง Facebook</a>
+          <div class="offline-services-body">
+            <h3>หาวัสดุ / ปั้นตัวละคร</h3>
+            <p>บริการนี้ยังไม่เปิดสั่งผ่านเว็บ</p>
+            <p>เพราะราคาขึ้นกับรายการวัสดุแต่ละชิ้น — กรุณาสอบถามและสั่งผ่าน <strong>Facebook หน้าร้าน</strong> โดยตรง</p>
+          </div>
+          <a class="btn-service offline-services-btn" href="https://www.facebook.com/meejai.sutan" target="_blank" rel="noopener noreferrer">สอบถามทาง Facebook</a>
         </section>
       </div>
 
@@ -191,15 +194,41 @@
             <h3 class="section-title">2. ข้อมูลบัญชีเกม</h3>
             <div class="form-row">
               <div class="form-group">
-                <label for="game-user">User (ชื่อผู้ใช้)</label>
-                <input type="text" id="game-user" placeholder="Username" required />
+                <label for="farm-game-name">1. ชื่อในเกม</label>
+                <input type="text" id="farm-game-name" placeholder="ชื่อตัวละคร / ชื่อในเกม" required />
               </div>
               <div class="form-group">
-                <label for="game-id">UID / ID</label>
-                <input type="text" id="game-id" placeholder="เช่น 812345678" required />
+                <label for="farm-game-uid">2. UID</label>
+                <input type="text" id="farm-game-uid" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="farm-game-server">3. เซิร์ฟเวอร์</label>
+                <select id="farm-game-server" required>
+                  <option value="">เลือกเซิร์ฟเวอร์</option>
+                  <option value="Asia">Asia</option>
+                  <option value="America">America</option>
+                  <option value="Europe">Europe</option>
+                  <option value="TW/HK/MO">TW/HK/MO</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="farm-game-login-id">4. ID (ล็อกอิน)</label>
+                <input type="text" id="farm-game-login-id" placeholder="อีเมล / ยูสเซอร์ล็อกอิน" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="farm-game-pass">5. Pass</label>
+                <input type="text" id="farm-game-pass" placeholder="รหัสผ่านบัญชีเกม" required autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="farm-game-ar">6. AR</label>
+                <input type="number" id="farm-game-ar" placeholder="เช่น 55" min="1" max="60" required />
+              </div>
+            </div>
+            <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
 
           <!-- ข้อห้าม -->
@@ -522,15 +551,41 @@
             <h3 class="section-title">2. ข้อมูลบัญชีเกม</h3>
             <div class="form-row">
               <div class="form-group">
-                <label for="abyss-user">User (ชื่อผู้ใช้)</label>
-                <input type="text" id="abyss-user" placeholder="Username" required />
+                <label for="abyss-game-name">1. ชื่อในเกม</label>
+                <input type="text" id="abyss-game-name" placeholder="ชื่อตัวละคร / ชื่อในเกม" required />
               </div>
               <div class="form-group">
-                <label for="abyss-id">UID / ID</label>
-                <input type="text" id="abyss-id" placeholder="เช่น 812345678" required />
+                <label for="abyss-game-uid">2. UID</label>
+                <input type="text" id="abyss-game-uid" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="abyss-game-server">3. เซิร์ฟเวอร์</label>
+                <select id="abyss-game-server" required>
+                  <option value="">เลือกเซิร์ฟเวอร์</option>
+                  <option value="Asia">Asia</option>
+                  <option value="America">America</option>
+                  <option value="Europe">Europe</option>
+                  <option value="TW/HK/MO">TW/HK/MO</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="abyss-game-login-id">4. ID (ล็อกอิน)</label>
+                <input type="text" id="abyss-game-login-id" placeholder="อีเมล / ยูสเซอร์ล็อกอิน" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="abyss-game-pass">5. Pass</label>
+                <input type="text" id="abyss-game-pass" placeholder="รหัสผ่านบัญชีเกม" required autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="abyss-game-ar">6. AR</label>
+                <input type="number" id="abyss-game-ar" placeholder="เช่น 55" min="1" max="60" required />
+              </div>
+            </div>
+            <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
 
           <section class="form-section glass">
@@ -553,10 +608,21 @@
 
           <section class="form-section glass">
             <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
-            <p class="hint">ราคาขึ้นกับชั้น/ดาวที่เลือก — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
-            <div class="qr-box" data-qr="static">
-              <p class="qr-note">กำลังโหลด QR พร้อมเพย์...</p>
+            <p class="hint">เลือกแพ็กเกจ แล้วกดปุ่มสร้าง QR ตามยอด จากนั้นอัปโหลดสลิป</p>
+            <div class="price-summary" style="margin-bottom:0.75rem">
+              <span>ยอดที่ต้องชำระ:</span>
+              <strong id="abyss-total-price">0 ฿</strong>
             </div>
+            <div class="qr-generate-row">
+              <button type="button" class="btn-generate-qr" id="btn-generate-abyss-qr" disabled>
+                สร้าง QR ตามยอดชำระ
+              </button>
+              <span class="qr-generate-hint" id="abyss-qr-hint">เลือกแพ็กเกจก่อน แล้วกดปุ่มเพื่อสร้าง QR</span>
+            </div>
+            <div class="qr-box qr-box-pending" data-qr="dynamic" id="abyss-qr-box">
+              <p class="qr-note">ยังไม่ได้สร้าง QR</p>
+            </div>
+            <p class="qr-amount-line" id="abyss-qr-amount-line"></p>
             <div class="form-group">
               <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
               <div class="upload-area" id="abyss-slip-area">
@@ -608,15 +674,41 @@
             <h3 class="section-title">2. ข้อมูลบัญชีเกม</h3>
             <div class="form-row">
               <div class="form-group">
-                <label for="explore-user">User (ชื่อผู้ใช้)</label>
-                <input type="text" id="explore-user" placeholder="Username" required />
+                <label for="explore-game-name">1. ชื่อในเกม</label>
+                <input type="text" id="explore-game-name" placeholder="ชื่อตัวละคร / ชื่อในเกม" required />
               </div>
               <div class="form-group">
-                <label for="explore-id">UID / ID</label>
-                <input type="text" id="explore-id" placeholder="เช่น 812345678" required />
+                <label for="explore-game-uid">2. UID</label>
+                <input type="text" id="explore-game-uid" placeholder="เช่น 812345678" required />
               </div>
             </div>
-            <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="explore-game-server">3. เซิร์ฟเวอร์</label>
+                <select id="explore-game-server" required>
+                  <option value="">เลือกเซิร์ฟเวอร์</option>
+                  <option value="Asia">Asia</option>
+                  <option value="America">America</option>
+                  <option value="Europe">Europe</option>
+                  <option value="TW/HK/MO">TW/HK/MO</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="explore-game-login-id">4. ID (ล็อกอิน)</label>
+                <input type="text" id="explore-game-login-id" placeholder="อีเมล / ยูสเซอร์ล็อกอิน" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="explore-game-pass">5. Pass</label>
+                <input type="text" id="explore-game-pass" placeholder="รหัสผ่านบัญชีเกม" required autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="explore-game-ar">6. AR</label>
+                <input type="number" id="explore-game-ar" placeholder="เช่น 55" min="1" max="60" required />
+              </div>
+            </div>
+            <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
 
           <section class="form-section glass">
@@ -639,9 +731,15 @@
 
           <section class="form-section glass">
             <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
-            <p class="hint">ราคาขึ้นกับพื้นที่ที่เลือก — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
-            <div class="qr-box" data-qr="static">
-              <p class="qr-note">กำลังโหลด QR พร้อมเพย์...</p>
+            <p class="hint">ราคาตามที่ตกลงกับร้าน — กดสร้าง QR หลังทราบยอด หรือโอนแล้วอัปโหลดสลิป</p>
+            <div class="qr-generate-row">
+              <button type="button" class="btn-generate-qr" id="btn-generate-explore-qr">
+                สร้าง QR พร้อมเพย์
+              </button>
+              <span class="qr-generate-hint" id="explore-qr-hint">สร้าง QR สำหรับโอน (ระบุยอดในแอปธนาคาร)</span>
+            </div>
+            <div class="qr-box qr-box-pending" data-qr="manual" id="explore-qr-box">
+              <p class="qr-note">กดปุ่มด้านบนเพื่อสร้าง QR</p>
             </div>
             <div class="form-group">
               <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>

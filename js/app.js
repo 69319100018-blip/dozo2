@@ -96,11 +96,11 @@ const abyssPackageGrid = document.getElementById("abyss-package-grid");
 const explorePackageGrid = document.getElementById("explore-package-grid");
 
 const ABYSS_OPTIONS = [
-  { id: "floor-9-10", label: "ชั้น 9–10", sub: "เคลียร์" },
-  { id: "floor-11", label: "ชั้น 11", sub: "เคลียร์" },
-  { id: "floor-12", label: "ชั้น 12", sub: "เคลียร์" },
-  { id: "full-36", label: "36 ดาว", sub: "เต็มทุกชั้น" },
-  { id: "custom", label: "กำหนดเอง", sub: "ระบุในรายละเอียด" }
+  { id: "floor-9-10", label: "ชั้น 9–10", sub: "30 ฿", price: 30 },
+  { id: "floor-9-11", label: "ชั้น 9–11", sub: "60 ฿", price: 60 },
+  { id: "floor-9-12", label: "ชั้น 9–12", sub: "120 ฿", price: 120 },
+  { id: "floor-11-12", label: "ชั้น 11–12", sub: "100 ฿", price: 100 },
+  { id: "full-36", label: "36 ดาว", sub: "170 ฿", price: 170 },
 ];
 
 const EXPLORE_OPTIONS = [
@@ -790,28 +790,54 @@ function updateSubmitState() {
 }
 
 // ---------- Submit Order ----------
+function readGameAccount(prefix) {
+  const name = document.getElementById(`${prefix}-game-name`)?.value.trim() || "";
+  const uid = document.getElementById(`${prefix}-game-uid`)?.value.trim() || "";
+  const server = document.getElementById(`${prefix}-game-server`)?.value.trim() || "";
+  const loginId = document.getElementById(`${prefix}-game-login-id`)?.value.trim() || "";
+  const pass = document.getElementById(`${prefix}-game-pass`)?.value.trim() || "";
+  const arRaw = document.getElementById(`${prefix}-game-ar`)?.value;
+  const ar = arRaw != null && String(arRaw).trim() !== "" ? Number(arRaw) : null;
+  return { name, uid, server, loginId, pass, ar };
+}
+
+function validateGameAccount(account) {
+  if (!account.name) return "กรุณากรอกชื่อในเกม";
+  if (!account.uid) return "กรุณากรอก UID";
+  if (!account.server) return "กรุณาเลือกเซิร์ฟเวอร์";
+  if (!account.loginId) return "กรุณากรอก ID ล็อกอิน";
+  if (!account.pass) return "กรุณากรอก Pass";
+  if (account.ar == null || !Number.isFinite(account.ar) || account.ar < 1) return "กรุณากรอก AR ให้ถูกต้อง";
+  return null;
+}
+
 farmForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedPackage) { alert("กรุณาเลือกจำนวนเจม"); return; }
   if (!hasSlip || !selectedFarmSlipFile) { slipError.classList.add("show"); return; }
 
-  const userVal = document.getElementById("game-user").value.trim();
-  const uidVal = document.getElementById("game-id").value.trim();
-  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+  const account = readGameAccount("farm");
+  const accountError = validateGameAccount(account);
+  if (accountError) { alert(accountError); return; }
 
   const details = {
     gems: selectedPackage.gems,
     rush: rushCheck.checked,
     prohibitions: document.getElementById("prohibitions").value.trim(),
-    stream: document.querySelector('input[name="stream"]:checked')?.value || "no"
+    stream: document.querySelector('input[name="stream"]:checked')?.value || "no",
+    gameName: account.name,
+    server: account.server,
+    loginId: account.loginId,
+    gamePass: account.pass,
+    ar: account.ar,
   };
 
   btnSubmitOrder.disabled = true;
   try {
     const saved = await saveOrder({
       service: "farm-gem",
-      gameUsername: userVal,
-      gameUid: uidVal,
+      gameUsername: account.name,
+      gameUid: account.uid,
       details
     }, { slipFile: selectedFarmSlipFile });
 
@@ -1095,13 +1121,114 @@ function renderOptionGrid(grid, options, selectedRef, onSelect) {
   });
 }
 
+let abyssQrGenerated = false;
+let lastAbyssQrAmount = null;
+
+function getAbyssTotalAmount() {
+  if (!selectedAbyss || selectedAbyss.price == null) return null;
+  return Number(selectedAbyss.price) || null;
+}
+
+function updateAbyssTotalDisplay() {
+  const el = document.getElementById("abyss-total-price");
+  const price = getAbyssTotalAmount();
+  if (el) el.textContent = price != null ? price.toLocaleString() + " ฿" : "0 ฿";
+}
+
+function resetAbyssQr() {
+  abyssQrGenerated = false;
+  lastAbyssQrAmount = null;
+  const box = document.getElementById("abyss-qr-box");
+  const amountLine = document.getElementById("abyss-qr-amount-line");
+  if (box) {
+    box.classList.add("qr-box-pending");
+    box.innerHTML = `<p class="qr-note">ยังไม่ได้สร้าง QR</p>`;
+  }
+  if (amountLine) amountLine.textContent = "";
+}
+
+function updateAbyssQrButton() {
+  const btn = document.getElementById("btn-generate-abyss-qr");
+  const hint = document.getElementById("abyss-qr-hint");
+  if (!btn) return;
+  const amount = getAbyssTotalAmount();
+  const hasPackage = amount != null && amount > 0;
+  btn.disabled = !hasPackage;
+  if (!hasPackage) {
+    btn.textContent = "สร้าง QR ตามยอดชำระ";
+    if (hint) hint.textContent = "เลือกแพ็กเกจก่อน แล้วกดปุ่มเพื่อสร้าง QR";
+    return;
+  }
+  btn.textContent = abyssQrGenerated && lastAbyssQrAmount === amount
+    ? `สร้าง QR ใหม่ (${amount.toLocaleString()} ฿)`
+    : `สร้าง QR ${amount.toLocaleString()} ฿`;
+  if (hint) {
+    hint.textContent = abyssQrGenerated && lastAbyssQrAmount === amount
+      ? `QR ปัจจุบัน: ${amount.toLocaleString()} ฿ — กดอีกครั้งได้`
+      : `พร้อมสร้าง QR ยอด ${amount.toLocaleString()} ฿`;
+  }
+}
+
+function generateAbyssQr() {
+  const amount = getAbyssTotalAmount();
+  const box = document.getElementById("abyss-qr-box");
+  const amountLine = document.getElementById("abyss-qr-amount-line");
+  if (amount == null || amount <= 0) {
+    alert("กรุณาเลือกแพ็กเกจก่อน");
+    return;
+  }
+  if (!promptPayReady || !promptPayId || !window.DozoPromptPay) {
+    alert("ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel");
+    return;
+  }
+  if (!box) return;
+  try {
+    const payload = window.DozoPromptPay.generatePayload(promptPayId, { amount });
+    box.classList.remove("qr-box-pending");
+    window.DozoPromptPay.renderQr(box, payload, amount);
+    abyssQrGenerated = true;
+    lastAbyssQrAmount = amount;
+    if (amountLine) amountLine.textContent = `ยอดใน QR: ${amount.toLocaleString()} ฿`;
+    updateAbyssQrButton();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "สร้าง QR ไม่สำเร็จ");
+  }
+}
+
+function generateExploreQr() {
+  const box = document.getElementById("explore-qr-box");
+  if (!promptPayReady || !promptPayId || !window.DozoPromptPay) {
+    alert("ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel");
+    return;
+  }
+  if (!box) return;
+  try {
+    const payload = window.DozoPromptPay.generatePayload(promptPayId, {});
+    box.classList.remove("qr-box-pending");
+    window.DozoPromptPay.renderQr(box, payload, null);
+    const hint = document.getElementById("explore-qr-hint");
+    if (hint) hint.textContent = "สแกนแล้วระบุยอดในแอปธนาคารตามที่ตกลง";
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "สร้าง QR ไม่สำเร็จ");
+  }
+}
+
 function renderAbyssOptions() {
   selectedAbyss = null;
   hasAbyssSlip = false;
   selectedAbyssSlipFile = null;
+  resetAbyssQr();
+  updateAbyssTotalDisplay();
+  updateAbyssQrButton();
   updateAbyssSubmitState();
   renderOptionGrid(abyssPackageGrid, ABYSS_OPTIONS, selectedAbyss, (opt) => {
     selectedAbyss = opt;
+    const price = getAbyssTotalAmount();
+    if (price !== lastAbyssQrAmount) resetAbyssQr();
+    updateAbyssTotalDisplay();
+    updateAbyssQrButton();
     updateAbyssSubmitState();
   });
 }
@@ -1123,6 +1250,17 @@ function updateAbyssSubmitState() {
 function updateExploreSubmitState() {
   if (btnSubmitExplore) btnSubmitExplore.disabled = !(selectedExplore && hasExploreSlip);
 }
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest?.("#btn-generate-abyss-qr")) {
+    e.preventDefault();
+    generateAbyssQr();
+  }
+  if (e.target.closest?.("#btn-generate-explore-qr")) {
+    e.preventDefault();
+    generateExploreQr();
+  }
+});
 
 bindImageUpload({
   inputId: "abyss-slip-upload",
@@ -1146,20 +1284,26 @@ abyssForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedAbyss) { alert("กรุณาเลือกชั้น / เป้าหมาย"); return; }
   if (!hasAbyssSlip || !selectedAbyssSlipFile) { document.getElementById("abyss-slip-error")?.classList.add("show"); return; }
-  const userVal = document.getElementById("abyss-user")?.value.trim();
-  const uidVal = document.getElementById("abyss-id")?.value.trim();
-  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+  const account = readGameAccount("abyss");
+  const accountError = validateGameAccount(account);
+  if (accountError) { alert(accountError); return; }
 
   const details = {
+    packageId: selectedAbyss.id,
     package: selectedAbyss.label,
     detail: document.getElementById("abyss-detail")?.value.trim() || "",
     prohibitions: document.getElementById("abyss-prohibitions")?.value.trim() || "",
-    stream: document.querySelector('input[name="abyss-stream"]:checked')?.value || "no"
+    stream: document.querySelector('input[name="abyss-stream"]:checked')?.value || "no",
+    gameName: account.name,
+    server: account.server,
+    loginId: account.loginId,
+    gamePass: account.pass,
+    ar: account.ar,
   };
   btnSubmitAbyss.disabled = true;
   try {
-    const saved = await saveOrder({ service: "abyss", gameUsername: userVal, gameUid: uidVal, details }, { slipFile: selectedAbyssSlipFile });
-    alert(`✅ ส่งคำสั่งซื้อเคลียร์ Abyss สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเป้าหมาย: ${details.package}\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+    const saved = await saveOrder({ service: "abyss", gameUsername: account.name, gameUid: account.uid, details }, { slipFile: selectedAbyssSlipFile });
+    alert(`✅ ส่งคำสั่งซื้อเคลียร์ Abyss สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเป้าหมาย: ${details.package}\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1171,19 +1315,24 @@ exploreForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedExplore) { alert("กรุณาเลือกพื้นที่ / เป้าหมาย"); return; }
   if (!hasExploreSlip || !selectedExploreSlipFile) { document.getElementById("explore-slip-error")?.classList.add("show"); return; }
-  const userVal = document.getElementById("explore-user")?.value.trim();
-  const uidVal = document.getElementById("explore-id")?.value.trim();
-  if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+  const account = readGameAccount("explore");
+  const accountError = validateGameAccount(account);
+  if (accountError) { alert(accountError); return; }
 
   const details = {
     package: selectedExplore.label,
     detail: document.getElementById("explore-detail")?.value.trim() || "",
     prohibitions: document.getElementById("explore-prohibitions")?.value.trim() || "",
-    stream: document.querySelector('input[name="explore-stream"]:checked')?.value || "no"
+    stream: document.querySelector('input[name="explore-stream"]:checked')?.value || "no",
+    gameName: account.name,
+    server: account.server,
+    loginId: account.loginId,
+    gamePass: account.pass,
+    ar: account.ar,
   };
   btnSubmitExplore.disabled = true;
   try {
-    const saved = await saveOrder({ service: "explore", gameUsername: userVal, gameUid: uidVal, details }, { slipFile: selectedExploreSlipFile });
+    const saved = await saveOrder({ service: "explore", gameUsername: account.name, gameUid: account.uid, details }, { slipFile: selectedExploreSlipFile });
     alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nพื้นที่: ${details.package}\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
   } catch (error) {
     await handleOrderError(error);
