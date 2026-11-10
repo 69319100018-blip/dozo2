@@ -8,14 +8,31 @@ import {
 } from "../lib/server.js";
 import { notifyNewOrderAll } from "../lib/notify.js";
 
-const FARM_PRICES = new Map([
+// ราคาฟาร์มเจม — ลูกค้าปกติ
+const FARM_PRICES_CUSTOMER = new Map([
   [160, 10], [320, 18], [480, 29], [680, 36], [800, 49],
-  [1600, 90], [3200, 160], [4800, 249], [6400, 370], [8000, 440],
-  [9600, 500], [11200, 580], [12800, 680], [14400, 770], [16000, 890],
+  [1600, 90], [3200, 180], [4800, 290], [6400, 380], [8000, 490],
+  [9600, 570], [11200, 695], [12800, 785], [14400, 895], [16000, 1090],
 ]);
+
+// ราคาฟาร์มเจม — สมาชิก (member) ถูกกว่า ~5%
+const FARM_PRICES_MEMBER = new Map([
+  [160, 10], [320, 18], [480, 29], [680, 36], [800, 49],
+  [1600, 90], [3200, 180], [4800, 275], [6400, 361], [8000, 465],
+  [9600, 541], [11200, 660], [12800, 745], [14400, 850], [16000, 1035],
+]);
+
 const ALLOWED_SERVICES = new Set(["farm-gem", "material", "build-char", "abyss", "explore"]);
 const ALLOWED_STATUSES = new Set(["pending", "doing", "done", "cancel"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isMemberRole(role) {
+  return role === "member" || role === "staff" || role === "admin";
+}
+
+function getFarmPriceMap(role) {
+  return isMemberRole(role) ? FARM_PRICES_MEMBER : FARM_PRICES_CUSTOMER;
+}
 
 function cleanText(value, max = 1000) {
   return String(value ?? "").trim().slice(0, max);
@@ -29,7 +46,7 @@ function validateUploadPath(pathname, userId) {
   return isPrivateUploadPathForUser(pathname, userId);
 }
 
-function buildDetails(service, raw) {
+function buildDetails(service, raw, userRole = "customer") {
   const d = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const details = {
     prohibitions: cleanText(d.prohibitions, 1500),
@@ -38,13 +55,15 @@ function buildDetails(service, raw) {
 
   if (service === "farm-gem") {
     const gems = Number(d.gems);
-    if (!FARM_PRICES.has(gems)) throw new Error("แพ็กเกจเจมไม่ถูกต้อง");
+    const priceMap = getFarmPriceMap(userRole);
+    if (!priceMap.has(gems)) throw new Error("แพ็กเกจเจมไม่ถูกต้อง");
     const rush = d.rush === true;
-    const basePrice = FARM_PRICES.get(gems);
+    const basePrice = priceMap.get(gems);
+    const total = rush ? Math.round(basePrice * 1.3) : basePrice;
     return {
-      details: { ...details, gems, rush },
-      totalPrice: rush ? Math.round(basePrice * 1.3) : basePrice,
-      summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""} · ${rush ? Math.round(basePrice * 1.3) : basePrice}฿`,
+      details: { ...details, gems, rush, memberPrice: isMemberRole(userRole) },
+      totalPrice: total,
+      summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""} · ${total}฿`,
     };
   }
 
@@ -222,7 +241,7 @@ async function handler(request) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
 
-      const normalized = buildDetails(service, body.details);
+      const normalized = buildDetails(service, body.details, user.role);
       const [order] = await sql`
         INSERT INTO orders (
           customer_id, service, summary, game_username, game_uid,

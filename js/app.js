@@ -347,6 +347,7 @@ function setAuthMode(registerMode) {
 function applyRoleChrome(user) {
   isAdmin = user?.role === "admin";
   isStaff = user?.role === "staff";
+  const isMember = user?.role === "member";
 
   document.querySelectorAll(".customer-only").forEach(el => {
     el.classList.toggle("hidden", isAdmin || isStaff);
@@ -358,6 +359,16 @@ function applyRoleChrome(user) {
     el.classList.toggle("hidden", !isStaff);
   });
 
+  // แบนเนอร์สมาชิก / โปรโมสมัครสมาชิก (เฉพาะลูกค้า ไม่โชว์ให้ staff/admin)
+  const promo = document.getElementById("membership-promo");
+  const activeBanner = document.getElementById("member-active-banner");
+  if (promo) {
+    promo.classList.toggle("hidden", isAdmin || isStaff || isMember);
+  }
+  if (activeBanner) {
+    activeBanner.classList.toggle("hidden", isAdmin || isStaff || !isMember);
+  }
+
   const badge = document.getElementById("role-badge");
   if (badge) {
     if (isAdmin) {
@@ -366,9 +377,24 @@ function applyRoleChrome(user) {
     } else if (isStaff) {
       badge.textContent = "STAFF";
       badge.className = "role-badge role-staff";
+    } else if (isMember) {
+      badge.textContent = "MEMBER";
+      badge.className = "role-badge role-member";
     } else {
       badge.textContent = "";
       badge.className = "role-badge hidden";
+    }
+  }
+
+  // อัปเดตข้อความระดับราคาในหน้าฟาร์มเจม
+  const tierNote = document.getElementById("farm-price-tier-note");
+  if (tierNote) {
+    if (isMemberUser()) {
+      tierNote.textContent = "ราคาสมาชิก · ฟาร์มเจมถูกกว่าปกติประมาณ 5%";
+      tierNote.className = "price-tier-note member";
+    } else {
+      tierNote.textContent = "ราคาลูกค้าทั่วไป · สมัครสมาชิกผ่านแชทเพื่อรับส่วนลดฟาร์มเจม";
+      tierNote.className = "price-tier-note";
     }
   }
 }
@@ -499,6 +525,7 @@ document.getElementById("btn-back-home-mat")?.addEventListener("click", () => sh
 document.getElementById("btn-back-home-build")?.addEventListener("click", () => showView("home"));
 document.getElementById("btn-back-home-abyss")?.addEventListener("click", () => showView("home"));
 document.getElementById("btn-back-home-explore")?.addEventListener("click", () => showView("home"));
+document.getElementById("btn-goto-contact-member")?.addEventListener("click", () => showView("contact"));
 
 document.querySelectorAll("[data-goto]").forEach(btn => {
   btn.addEventListener("click", () => showView(btn.dataset.goto));
@@ -544,13 +571,14 @@ function renderPackages() {
   updateSubmitState();
 
   const packages = getActivePackages();
+  const memberMode = isMemberUser();
   packages.forEach((pkg, idx) => {
     const el = document.createElement("div");
     el.className = "package-item";
     el.dataset.index = idx;
     el.innerHTML = `
       <span class="gems">${pkg.gems.toLocaleString()} เจม</span>
-      <span class="price">${pkg.price} ฿</span>
+      <span class="price">${pkg.price} ฿${memberMode ? '<small class="mem-tag">สมาชิก</small>' : ""}</span>
     `;
     el.addEventListener("click", () => {
       packageGrid.querySelectorAll(".package-item").forEach(p => p.classList.remove("selected"));

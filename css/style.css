@@ -1498,6 +1498,18 @@ html, body {
   color: var(--primary);
 }
 
+.package-item .price .mem-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  vertical-align: middle;
+  background: rgba(240, 201, 135, 0.22);
+  color: var(--gold);
+}
+
 /* ========== ADMIN SUMMARY / STAFF STATS ========== */
 .admin-hero, .staff-hero {
   display: flex;
