@@ -235,12 +235,12 @@
           <!-- ชำระเงิน + สลิป -->
           <section class="form-section glass">
             <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
-            <p class="hint">สแกน QR ด้านล่างเพื่อโอนเงิน (PromptPay) จากนั้นอัปโหลดสลิป</p>
+            <p class="hint">เลือกแพ็กเกจแล้วระบบจะสร้าง QR PromptPay ตามยอดชำระอัตโนมัติ จากนั้นอัปโหลดสลิป</p>
             
-            <div class="qr-box">
-              <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
-              <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
+            <div class="qr-box" data-qr="dynamic" id="farm-qr-box">
+              <p class="qr-note">เลือกแพ็กเกจเพื่อสร้าง QR ตามยอดชำระ</p>
             </div>
+            <p class="qr-amount-line" id="farm-qr-amount-line"></p>
 
             <div class="form-group">
               <label for="slip-upload">อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
@@ -344,9 +344,8 @@
           <section class="form-section glass">
             <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
             <p class="hint">ราคาจะตกลงหลังทางร้านดูรายการวัสดุแล้ว — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
-            <div class="qr-box">
-              <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
-              <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
+            <div class="qr-box" data-qr="static">
+              <p class="qr-note">กำลังโหลด QR พร้อมเพย์...</p>
             </div>
             <div class="form-group">
               <label for="mat-slip-upload">อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
@@ -467,9 +466,8 @@
           <section class="form-section glass">
             <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
             <p class="hint">ราคาจะตกลงตามเป้าหมายปั้น — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
-            <div class="qr-box">
-              <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
-              <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
+            <div class="qr-box" data-qr="static">
+              <p class="qr-note">กำลังโหลด QR พร้อมเพย์...</p>
             </div>
             <div class="form-group">
               <label for="build-slip-upload">อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
@@ -556,9 +554,8 @@
           <section class="form-section glass">
             <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
             <p class="hint">ราคาขึ้นกับชั้น/ดาวที่เลือก — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
-            <div class="qr-box">
-              <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
-              <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
+            <div class="qr-box" data-qr="static">
+              <p class="qr-note">กำลังโหลด QR พร้อมเพย์...</p>
             </div>
             <div class="form-group">
               <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
@@ -643,9 +640,8 @@
           <section class="form-section glass">
             <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
             <p class="hint">ราคาขึ้นกับพื้นที่ที่เลือก — โอนตามที่ตกลง แล้วอัปโหลดสลิป</p>
-            <div class="qr-box">
-              <img src="assets/qr-promptpay.jpg" alt="QR PromptPay" class="qr-img" />
-              <p class="qr-note">สแกนเพื่อจ่ายผ่านพร้อมเพย์</p>
+            <div class="qr-box" data-qr="static">
+              <p class="qr-note">กำลังโหลด QR พร้อมเพย์...</p>
             </div>
             <div class="form-group">
               <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
@@ -875,7 +871,9 @@
     </main>
   </div>
 
-  <!-- API ภายในโปรเจกต์ Vercel นี้ -->
+  <!-- QRCode.js + PromptPay dynamic QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="js/promptpay.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>

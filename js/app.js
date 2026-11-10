@@ -475,6 +475,7 @@ logoutBtn.addEventListener("click", async () => {
 
 async function checkAuthState() {
   try {
+    await loadPromptPayConfig();
     const user = await DozoAPI.me();
     if (user) goToDashboard(user);
   } catch (error) {
@@ -592,19 +593,69 @@ function renderPackages() {
 
 }
 
+function getFarmTotalAmount() {
+  if (!selectedPackage) return null;
+  let price = selectedPackage.price;
+  if (rushCheck?.checked) {
+    price = Math.round(price * 1.3);
+  }
+  return price;
+}
+
 function updateTotal() {
   if (!selectedPackage) {
     totalPriceEl.textContent = "0 ฿";
+    refreshPromptPayQr(null);
     return;
   }
-  let price = selectedPackage.price;
-  if (rushCheck.checked) {
-    price = Math.round(price * 1.3);
-  }
+  const price = getFarmTotalAmount();
   totalPriceEl.textContent = price.toLocaleString() + " ฿";
+  refreshPromptPayQr(price);
 }
 
 rushCheck?.addEventListener("change", updateTotal);
+
+// ---------- PromptPay Dynamic QR ----------
+let promptPayId = null;
+let promptPayReady = false;
+
+async function loadPromptPayConfig() {
+  try {
+    const cfg = await DozoAPI.getConfig();
+    promptPayId = cfg.promptPayId || null;
+    promptPayReady = Boolean(promptPayId);
+    if (!promptPayReady) {
+      document.querySelectorAll(".qr-box[data-qr]").forEach((box) => {
+        box.innerHTML =
+          `<p class="qr-note warn">ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel<br/>ใส่เบอร์พร้อมเพย์แล้ว redeploy</p>`;
+      });
+      return;
+    }
+    // static boxes (บริการที่ยังไม่มีราคาตายตัว)
+    if (window.DozoPromptPay) {
+      window.DozoPromptPay.updateAllQrBoxes(promptPayId, null);
+    }
+  } catch (err) {
+    console.error("loadPromptPayConfig", err);
+  }
+}
+
+function refreshPromptPayQr(amount) {
+  if (!promptPayReady || !window.DozoPromptPay || !promptPayId) return;
+  // อัปเดตเฉพาะกล่อง dynamic (ฟาร์มเจม) ให้มียอด; static คงไว้
+  const dynamicBoxes = document.querySelectorAll('.qr-box[data-qr="dynamic"]');
+  dynamicBoxes.forEach((box) => {
+    try {
+      const payload = window.DozoPromptPay.generatePayload(promptPayId, {
+        amount: amount != null && amount > 0 ? amount : undefined,
+      });
+      window.DozoPromptPay.renderQr(box, payload, amount != null && amount > 0 ? amount : null);
+    } catch (err) {
+      console.error(err);
+      box.innerHTML = `<p class="qr-note warn">สร้าง QR ไม่สำเร็จ</p>`;
+    }
+  });
+}
 
 // ---------- Slip Upload ----------
 function handleSlipFile(file) {
