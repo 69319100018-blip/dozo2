@@ -595,22 +595,23 @@ function renderPackages() {
 
 function getFarmTotalAmount() {
   if (!selectedPackage) return null;
-  let price = selectedPackage.price;
+  let price = Number(selectedPackage.price) || 0;
   if (rushCheck?.checked) {
     price = Math.round(price * 1.3);
   }
-  return price;
+  return price > 0 ? price : null;
 }
 
 function updateTotal() {
-  if (!selectedPackage) {
-    totalPriceEl.textContent = "0 ฿";
-    refreshPromptPayQr(null);
-    return;
-  }
   const price = getFarmTotalAmount();
-  totalPriceEl.textContent = price.toLocaleString() + " ฿";
-  refreshPromptPayQr(price);
+  if (totalPriceEl) {
+    totalPriceEl.textContent = price != null ? price.toLocaleString() + " ฿" : "0 ฿";
+  }
+  // เปลี่ยนยอด → ล้าง QR เก่า ให้กดสร้างใหม่
+  if (price !== lastFarmQrAmount) {
+    resetFarmQr();
+  }
+  updateGenerateQrButton();
 }
 
 rushCheck?.addEventListener("change", updateTotal);
@@ -618,44 +619,133 @@ rushCheck?.addEventListener("change", updateTotal);
 // ---------- PromptPay Dynamic QR ----------
 let promptPayId = null;
 let promptPayReady = false;
+let farmQrGenerated = false;
+let lastFarmQrAmount = null;
+
+function farmQrEls() {
+  return {
+    btn: document.getElementById("btn-generate-farm-qr"),
+    box: document.getElementById("farm-qr-box"),
+    hint: document.getElementById("farm-qr-hint"),
+    amountLine: document.getElementById("farm-qr-amount-line"),
+  };
+}
 
 async function loadPromptPayConfig() {
   try {
     const cfg = await DozoAPI.getConfig();
-    promptPayId = cfg.promptPayId || null;
+    promptPayId = (cfg.promptPayId || "").trim() || null;
     promptPayReady = Boolean(promptPayId);
+
     if (!promptPayReady) {
-      document.querySelectorAll(".qr-box[data-qr]").forEach((box) => {
+      console.warn("[promptpay] PROMPTPAY_ID ยังไม่ถูกตั้งค่าใน Vercel");
+      document.querySelectorAll('.qr-box[data-qr="static"]').forEach((box) => {
         box.innerHTML =
-          `<p class="qr-note warn">ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel<br/>ใส่เบอร์พร้อมเพย์แล้ว redeploy</p>`;
+          `<p class="qr-note warn">ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel</p>`;
       });
+      updateGenerateQrButton();
       return;
     }
-    // static boxes (บริการที่ยังไม่มีราคาตายตัว)
-    if (window.DozoPromptPay) {
-      window.DozoPromptPay.updateAllQrBoxes(promptPayId, null);
-    }
+
+    // บริการอื่น: QR พร้อมเพย์แบบไม่ล็อกยอด
+    document.querySelectorAll('.qr-box[data-qr="static"]').forEach((box) => {
+      if (!window.DozoPromptPay) return;
+      try {
+        const payload = window.DozoPromptPay.generatePayload(promptPayId, {});
+        window.DozoPromptPay.renderQr(box, payload, null);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+    updateGenerateQrButton();
   } catch (err) {
     console.error("loadPromptPayConfig", err);
+    updateGenerateQrButton();
   }
 }
 
-function refreshPromptPayQr(amount) {
-  if (!promptPayReady || !window.DozoPromptPay || !promptPayId) return;
-  // อัปเดตเฉพาะกล่อง dynamic (ฟาร์มเจม) ให้มียอด; static คงไว้
-  const dynamicBoxes = document.querySelectorAll('.qr-box[data-qr="dynamic"]');
-  dynamicBoxes.forEach((box) => {
-    try {
-      const payload = window.DozoPromptPay.generatePayload(promptPayId, {
-        amount: amount != null && amount > 0 ? amount : undefined,
-      });
-      window.DozoPromptPay.renderQr(box, payload, amount != null && amount > 0 ? amount : null);
-    } catch (err) {
-      console.error(err);
-      box.innerHTML = `<p class="qr-note warn">สร้าง QR ไม่สำเร็จ</p>`;
-    }
-  });
+function updateGenerateQrButton() {
+  const { btn, hint } = farmQrEls();
+  if (!btn) return;
+
+  const amount = getFarmTotalAmount();
+  const hasPackage = amount != null && amount > 0;
+
+  // เปิดปุ่มเมื่อเลือกแพ็กแล้ว — แม้ยังไม่มี PROMPTPAY_ID (จะแจ้งตอนกด)
+  btn.disabled = !hasPackage;
+
+  if (!hasPackage) {
+    btn.textContent = "สร้าง QR ตามยอดชำระ";
+    if (hint) hint.textContent = "เลือกแพ็กเกจก่อน แล้วกดปุ่มเพื่อสร้าง QR";
+    return;
+  }
+
+  if (!promptPayReady) {
+    btn.textContent = `สร้าง QR ${amount.toLocaleString()} ฿`;
+    if (hint) hint.textContent = "กดได้ แต่ต้องตั้ง PROMPTPAY_ID ใน Vercel ก่อน";
+    return;
+  }
+
+  if (farmQrGenerated && lastFarmQrAmount === amount) {
+    btn.textContent = `สร้าง QR ใหม่ (${amount.toLocaleString()} ฿)`;
+    if (hint) hint.textContent = `QR ปัจจุบัน: ${amount.toLocaleString()} ฿ — กดอีกครั้งได้`;
+  } else {
+    btn.textContent = `สร้าง QR ${amount.toLocaleString()} ฿`;
+    if (hint) hint.textContent = `พร้อมสร้าง QR ยอด ${amount.toLocaleString()} ฿`;
+  }
 }
+
+function resetFarmQr() {
+  farmQrGenerated = false;
+  lastFarmQrAmount = null;
+  const { box, amountLine } = farmQrEls();
+  if (box) {
+    box.classList.add("qr-box-pending");
+    box.innerHTML = `<p class="qr-note">ยังไม่ได้สร้าง QR</p>`;
+  }
+  if (amountLine) amountLine.textContent = "";
+}
+
+function generateFarmQr() {
+  const { box, amountLine } = farmQrEls();
+  const amount = getFarmTotalAmount();
+
+  if (amount == null || amount <= 0) {
+    alert("กรุณาเลือกแพ็กเกจก่อน");
+    return;
+  }
+  if (!promptPayReady || !promptPayId) {
+    alert("ยังไม่ได้ตั้งค่า PROMPTPAY_ID ใน Vercel\nไปที่ Settings → Environment Variables แล้วใส่เบอร์พร้อมเพย์");
+    return;
+  }
+  if (!window.DozoPromptPay) {
+    alert("โหลดระบบ QR ไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ");
+    return;
+  }
+  if (!box) return;
+
+  try {
+    const payload = window.DozoPromptPay.generatePayload(promptPayId, { amount });
+    box.classList.remove("qr-box-pending");
+    window.DozoPromptPay.renderQr(box, payload, amount);
+    farmQrGenerated = true;
+    lastFarmQrAmount = amount;
+    if (amountLine) amountLine.textContent = `ยอดใน QR: ${amount.toLocaleString()} ฿`;
+    updateGenerateQrButton();
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = `<p class="qr-note warn">สร้าง QR ไม่สำเร็จ</p>`;
+    alert(err?.message || "สร้าง QR ไม่สำเร็จ");
+  }
+}
+
+// ผูกคลิกแบบ delegation — ไม่พังถ้า DOM ยังไม่พร้อมตอนโหลดสคริปต์
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest?.("#btn-generate-farm-qr");
+  if (!btn) return;
+  e.preventDefault();
+  generateFarmQr();
+});
 
 // ---------- Slip Upload ----------
 function handleSlipFile(file) {
