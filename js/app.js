@@ -166,24 +166,52 @@ async function handleOrderError(error) {
   alert(error?.message || "บันทึกคำสั่งซื้อไม่สำเร็จ กรุณาลองใหม่");
 }
 
-// ---------- Packages (จากภาพเรทราคา) ----------
-const PACKAGES = [
+// ---------- Packages: ลูกค้าปกติ (cus) ----------
+const CUSTOMER_PACKAGES = [
   { gems: 160, price: 10 },
   { gems: 320, price: 18 },
   { gems: 480, price: 29 },
   { gems: 680, price: 36 },
   { gems: 800, price: 49 },
   { gems: 1600, price: 90 },
-  { gems: 3200, price: 160 },
-  { gems: 4800, price: 249 },
-  { gems: 6400, price: 370 },
-  { gems: 8000, price: 440 },
-  { gems: 9600, price: 500 },
-  { gems: 11200, price: 580 },
-  { gems: 12800, price: 680 },
-  { gems: 14400, price: 770 },
-  { gems: 16000, price: 890 }
+  { gems: 3200, price: 180 },
+  { gems: 4800, price: 290 },
+  { gems: 6400, price: 380 },
+  { gems: 8000, price: 490 },
+  { gems: 9600, price: 570 },
+  { gems: 11200, price: 695 },
+  { gems: 12800, price: 785 },
+  { gems: 14400, price: 895 },
+  { gems: 16000, price: 1090 },
 ];
+
+// ---------- Packages: สมาชิก (mem) ----------
+const MEMBER_PACKAGES = [
+  { gems: 160, price: 10 },
+  { gems: 320, price: 18 },
+  { gems: 480, price: 29 },
+  { gems: 680, price: 36 },
+  { gems: 800, price: 49 },
+  { gems: 1600, price: 90 },
+  { gems: 3200, price: 180 },
+  { gems: 4800, price: 275 },
+  { gems: 6400, price: 361 },
+  { gems: 8000, price: 465 },
+  { gems: 9600, price: 541 },
+  { gems: 11200, price: 660 },
+  { gems: 12800, price: 745 },
+  { gems: 14400, price: 850 },
+  { gems: 16000, price: 1035 },
+];
+
+function getActivePackages() {
+  return isMemberUser() ? MEMBER_PACKAGES : CUSTOMER_PACKAGES;
+}
+
+function isMemberUser() {
+  const role = currentUser?.role;
+  return role === "member" || role === "staff" || role === "admin";
+}
 
 // ---------- รายชื่อตัวละคร Genshin (playable) ----------
 const CHARACTERS = [
@@ -515,7 +543,8 @@ function renderPackages() {
   updateTotal();
   updateSubmitState();
 
-  PACKAGES.forEach((pkg, idx) => {
+  const packages = getActivePackages();
+  packages.forEach((pkg, idx) => {
     const el = document.createElement("div");
     el.className = "package-item";
     el.dataset.index = idx;
@@ -524,7 +553,7 @@ function renderPackages() {
       <span class="price">${pkg.price} ฿</span>
     `;
     el.addEventListener("click", () => {
-      document.querySelectorAll(".package-item").forEach(p => p.classList.remove("selected"));
+      packageGrid.querySelectorAll(".package-item").forEach(p => p.classList.remove("selected"));
       el.classList.add("selected");
       selectedPackage = pkg;
       updateTotal();
@@ -532,6 +561,7 @@ function renderPackages() {
     });
     packageGrid.appendChild(el);
   });
+
 }
 
 function updateTotal() {

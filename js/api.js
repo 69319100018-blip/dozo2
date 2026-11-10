@@ -50,6 +50,13 @@
       });
     },
 
+    upgradeMember({ slipPath }) {
+      return request("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({ action: "upgrade-member", slipPath }),
+      });
+    },
+
     async listOrders() {
       const result = await request("/api/orders", { method: "GET" });
       return result.orders || [];

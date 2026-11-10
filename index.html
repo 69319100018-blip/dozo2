@@ -7,6 +7,22 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <!-- ========== VIDEO BACKGROUND ========== -->
+  <div class="bg-video-wrap" aria-hidden="true">
+    <video
+      id="bg-video"
+      class="bg-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+    >
+      <source src="assets/capitano.mp4" type="video/mp4" />
+    </video>
+    <div class="bg-video-overlay"></div>
+  </div>
+
   <!-- ========== LOADING / INTRO SCREEN ========== -->
   <div id="loading-screen" class="screen active">
     <div class="particles" id="particles"></div>

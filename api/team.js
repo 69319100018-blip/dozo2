@@ -30,9 +30,9 @@ async function handler(request) {
           LIMIT 500
         `,
         sql`
-          SELECT id::text AS id, email, display_name AS "displayName"
+          SELECT id::text AS id, email, display_name AS "displayName", role
           FROM users
-          WHERE role = 'customer'
+          WHERE role IN ('customer', 'member')
           ORDER BY created_at DESC
           LIMIT 500
         `,
@@ -57,12 +57,12 @@ async function handler(request) {
           UPDATE users
           SET role = 'staff', staff_title = ${staffTitle},
               staff_description = ${staffDescription || null}, updated_at = NOW()
-          WHERE id = ${userId}::uuid AND role = 'customer'
+          WHERE id = ${userId}::uuid AND role IN ('customer', 'member')
           RETURNING id::text AS id, email, display_name AS "displayName",
             role, staff_title AS "staffTitle", staff_description AS "staffDescription"
         `;
         if (!updated) {
-          return json({ error: "ไม่พบบัญชีลูกค้า หรือบัญชีนี้ไม่ได้อยู่ในสถานะลูกค้า" }, 404);
+          return json({ error: "ไม่พบบัญชีลูกค้า หรือบัญชีนี้ไม่ได้อยู่ในสถานะลูกค้า/สมาชิก" }, 404);
         }
         return json({ success: true, member: updated });
       }

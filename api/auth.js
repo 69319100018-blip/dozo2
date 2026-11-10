@@ -31,6 +31,71 @@ async function handler(request) {
       return json({ success: true }, 200, { "Set-Cookie": clearSessionCookie() });
     }
 
+    // สมัครสมาชิก (จ่าย 50 บาท) → อัปเดต role เป็น member ทันที
+    if (action === "upgrade-member") {
+      const sessionUser = await getSessionUser(request);
+      if (!sessionUser) {
+        return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
+      }
+      if (sessionUser.role !== "customer") {
+        return json({ error: "บัญชีนี้เป็นสมาชิกหรือทีมงานอยู่แล้ว" }, 400);
+      }
+
+      const slipPath = String(body.slipPath || "").trim();
+      if (!slipPath || slipPath.length > 500) {
+        return json({ error: "กรุณาอัปโหลดสลิปการโอนเงิน 50 บาท" }, 400);
+      }
+
+      try {
+        let updated;
+        try {
+          [updated] = await sql`
+            UPDATE users
+            SET role = 'member',
+                membership_slip_path = ${slipPath},
+                member_since = NOW(),
+                updated_at = NOW()
+            WHERE id = ${sessionUser.id}::uuid AND role = 'customer'
+            RETURNING id::text AS id, email, display_name AS "displayName", role
+          `;
+        } catch (colError) {
+          console.error("upgrade-member column fallback:", colError?.message || colError);
+          [updated] = await sql`
+            UPDATE users
+            SET role = 'member', updated_at = NOW()
+            WHERE id = ${sessionUser.id}::uuid AND role = 'customer'
+            RETURNING id::text AS id, email, display_name AS "displayName", role
+          `;
+        }
+
+        if (!updated) {
+          return json({ error: "อัปเกรดสมาชิกไม่สำเร็จ กรุณาลองใหม่" }, 400);
+        }
+
+        return json({ success: true, user: updated });
+      } catch (dbError) {
+        console.error("upgrade-member failed:", dbError);
+        const msg = String(dbError?.message || "");
+        const code = String(dbError?.code || "");
+
+        if (
+          code === "23514" ||
+          /role/i.test(msg) ||
+          /check constraint/i.test(msg) ||
+          /users_role_check/i.test(msg)
+        ) {
+          return json({
+            error:
+              "ฐานข้อมูลยังไม่รองรับ role สมาชิก กรุณารัน SQL add_member_role.sql ใน Neon ก่อน",
+          }, 500);
+        }
+
+        return json({
+          error: `อัปเกรดสมาชิกไม่สำเร็จ: ${msg.slice(0, 180) || "ข้อผิดพลาดจากฐานข้อมูล"}`,
+        }, 500);
+      }
+    }
+
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
@@ -90,7 +155,10 @@ async function handler(request) {
     return json({ error: "ไม่รู้จักคำสั่งนี้" }, 400);
   } catch (error) {
     const status = error.status || 500;
-    return json({ error: status === 500 ? errorMessage(error, "ระบบสมาชิกขัดข้อง กรุณาลองใหม่") : error.message }, status);
+    return json(
+      { error: status === 500 ? errorMessage(error, "ระบบสมาชิกขัดข้อง กรุณาลองใหม่") : error.message },
+      status
+    );
   }
 }
 
