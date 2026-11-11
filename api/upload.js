@@ -7,6 +7,7 @@ import {
   getSql,
   isPrivateUploadPathForUser,
   json,
+  verifyFileViewToken,
 } from "../lib/server.js";
 
 const MAX_FILE_SIZE = 3 * 1024 * 1024;
@@ -18,10 +19,9 @@ const ALLOWED_TYPES = new Map([
 
 async function handler(request) {
   try {
-    const user = await getSessionUser(request);
-    if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
-
     if (request.method === "POST") {
+      const user = await getSessionUser(request);
+      if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
       assertSameOrigin(request);
       const form = await request.formData();
       const file = form.get("file");
@@ -61,36 +61,46 @@ async function handler(request) {
     }
 
     if (request.method === "GET") {
-      const pathname = new URL(request.url).searchParams.get("pathname");
+      const url = new URL(request.url);
+      const pathname = url.searchParams.get("pathname");
+      const viewToken = url.searchParams.get("token");
       if (!pathname || pathname.includes("..") || pathname.startsWith("/")) {
         return json({ error: "ไม่พบไฟล์" }, 400);
       }
 
-      const sql = getSql();
-      let access;
-      if (user.role === "admin") {
-        [access] = await sql`
-          SELECT id FROM orders
-          WHERE slip_path = ${pathname} OR attachment_path = ${pathname}
-          LIMIT 1
-        `;
-      } else if (user.role === "staff") {
-        // ลูกทีมดูไฟล์ได้เฉพาะงานที่ถูกส่งมอบให้ตัวเอง
-        [access] = await sql`
-          SELECT id FROM orders
-          WHERE assigned_staff_id = ${user.id}
-            AND (slip_path = ${pathname} OR attachment_path = ${pathname})
-          LIMIT 1
-        `;
-      } else {
-        [access] = await sql`
-          SELECT id FROM orders
-          WHERE customer_id = ${user.id}
-            AND (slip_path = ${pathname} OR attachment_path = ${pathname})
-          LIMIT 1
-        `;
+      // ลิงก์จากแจ้งเตือน Discord/LINE (โทเคนชั่วคราว — เฉพาะไฟล์แนบ ไม่ใช่สลิป)
+      const tokenOk = Boolean(viewToken && verifyFileViewToken(pathname, viewToken));
+
+      if (!tokenOk) {
+        const user = await getSessionUser(request);
+        if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
+
+        const sql = getSql();
+        let access;
+        if (user.role === "admin") {
+          [access] = await sql`
+            SELECT id FROM orders
+            WHERE slip_path = ${pathname} OR attachment_path = ${pathname}
+            LIMIT 1
+          `;
+        } else if (user.role === "staff") {
+          // ลูกทีมดูไฟล์ได้เฉพาะงานที่ถูกส่งมอบให้ตัวเอง
+          [access] = await sql`
+            SELECT id FROM orders
+            WHERE assigned_staff_id = ${user.id}
+              AND (slip_path = ${pathname} OR attachment_path = ${pathname})
+            LIMIT 1
+          `;
+        } else {
+          [access] = await sql`
+            SELECT id FROM orders
+            WHERE customer_id = ${user.id}
+              AND (slip_path = ${pathname} OR attachment_path = ${pathname})
+            LIMIT 1
+          `;
+        }
+        if (!access) return json({ error: "ไม่มีสิทธิ์ดูไฟล์นี้" }, 403);
       }
-      if (!access) return json({ error: "ไม่มีสิทธิ์ดูไฟล์นี้" }, 403);
 
       const blob = await get(pathname, { access: "private" });
       if (!blob || blob.statusCode !== 200 || !blob.stream) return json({ error: "ไม่พบไฟล์" }, 404);

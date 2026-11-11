@@ -56,8 +56,11 @@ async function handler(request) {
       summary: "ข้อความทดสอบจากระบบ Dozo",
       gameUsername: "test-user",
       gameUid: "000000000",
+      customerName: user.displayName || "ผู้ทดสอบ",
       customerEmail: user.email || "admin@test",
       totalPrice: 0,
+      attachmentViewUrl: null,
+      attachmentLabel: "ดูภาพแมพ",
     };
 
     const results = {};

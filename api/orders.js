@@ -1,5 +1,6 @@
-	import {
+import {
   assertSameOrigin,
+  buildAttachmentViewUrl,
   errorMessage,
   getSessionUser,
   getSql,
@@ -342,14 +343,29 @@ async function handler(request) {
 
       // แจ้งเตือน LINE + Discord (ไม่บล็อกการสร้างออเดอร์ถ้าส่งไม่สำเร็จ)
       try {
+        const attachmentLabel =
+          service === "farm-gem" || service === "explore"
+            ? "ดูภาพแมพ"
+            : service === "material"
+              ? "ดูภาพวัสดุ"
+              : service === "build-char"
+                ? "ดูภาพตัวละคร"
+                : "ดูภาพแนบ";
+        const attachmentViewUrl = attachmentPath
+          ? buildAttachmentViewUrl(request, attachmentPath)
+          : null;
+
         await notifyNewOrderAll({
           orderNumber: order.orderNumber,
           service: order.service,
           summary: order.summary,
           gameUsername: order.gameUsername,
           gameUid: order.uid,
+          customerName: user.displayName || "",
           customerEmail: user.email,
           totalPrice: order.totalPrice,
+          attachmentViewUrl,
+          attachmentLabel,
         });
       } catch (notifyError) {
         console.error("[notify] notifyNewOrderAll failed", notifyError);
