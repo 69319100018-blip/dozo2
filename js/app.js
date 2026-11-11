@@ -1868,24 +1868,24 @@ async function renderCustomerHistory() {
   tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">กำลังโหลดคิว...</td></tr>`;
   try {
     const orders = await DozoAPI.listPublicQueue();
-    if (countEl) countEl.textContent = `${orders.length} รายการ`;
+    if (countEl) countEl.textContent = String(orders.length);
     if (!orders.length) {
       tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์ในคิว</td></tr>`;
       return;
     }
-    tbody.innerHTML = orders.map((o) => {
+    tbody.innerHTML = orders.map((o, idx) => {
       const st = o.status || "pending";
       const price =
         o.totalPrice != null && o.totalPrice !== ""
           ? `${Number(o.totalPrice).toLocaleString("th-TH")} ฿`
           : "-";
-      return `<tr>
-        <td>${escapeHtml(formatTime(o.createdAt))}</td>
-        <td>#${escapeHtml(o.orderNumber)}</td>
+      return `<tr class="queue-row status-row-${escapeHtml(st)}">
+        <td class="queue-time">${escapeHtml(formatTime(o.createdAt))}</td>
+        <td><span class="queue-id">#${escapeHtml(o.orderNumber)}</span></td>
         <td><span class="svc-chip">${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</span></td>
-        <td class="cell-detail">${escapeHtml(o.summary || "-")}</td>
-        <td>${escapeHtml(o.facebookName || "-")}</td>
-        <td>${escapeHtml(price)}</td>
+        <td class="queue-summary">${escapeHtml(o.summary || "-")}</td>
+        <td class="queue-fb">${escapeHtml(o.facebookName || "-")}</td>
+        <td class="queue-price">${escapeHtml(price)}</td>
         <td><span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span></td>
       </tr>`;
     }).join("");
@@ -2059,8 +2059,20 @@ document.getElementById("btn-refresh-staff")?.addEventListener("click", () => {
   if (isStaff) renderStaffJobs();
 });
 
-document.getElementById("btn-refresh-queue")?.addEventListener("click", () => {
-  renderCustomerHistory();
+document.getElementById("btn-refresh-queue")?.addEventListener("click", async () => {
+  const btn = document.getElementById("btn-refresh-queue");
+  if (btn) {
+    btn.classList.add("is-loading");
+    btn.disabled = true;
+  }
+  try {
+    await renderCustomerHistory();
+  } finally {
+    if (btn) {
+      btn.classList.remove("is-loading");
+      btn.disabled = false;
+    }
+  }
 });
 
 // ---------- Start ----------
