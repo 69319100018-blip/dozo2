@@ -1978,10 +1978,201 @@ html, body {
   min-width: 155px;
 }
 
+/* ========== PUBLIC QUEUE PAGE ========== */
+.queue-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem;
+  margin-bottom: 1.15rem;
+  border: 1px solid rgba(94, 234, 212, 0.12);
+  background:
+    linear-gradient(135deg, rgba(94, 234, 212, 0.08), transparent 55%),
+    rgba(10, 16, 28, 0.55);
+}
+
+.queue-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.queue-hero-text h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.55rem;
+}
+
+.queue-hero-text p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
+.queue-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.queue-count-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0.55rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(94, 234, 212, 0.1);
+  border: 1px solid rgba(94, 234, 212, 0.22);
+  min-width: 5.5rem;
+}
+
+.queue-count-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.queue-count-pill strong {
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-queue-refresh {
+  white-space: nowrap;
+}
+
+.queue-table-wrap {
+  border-radius: calc(var(--radius) + 2px);
+  overflow: auto;
+  max-height: min(62vh, 560px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.queue-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.queue-table th,
+.queue-table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.queue-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(14, 22, 38, 0.98), rgba(12, 18, 32, 0.96));
+  color: var(--text-muted);
+  font-weight: 650;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(94, 234, 212, 0.15);
+}
+
+.queue-table tbody tr {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.queue-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.queue-table tbody tr:hover {
+  background: rgba(94, 234, 212, 0.07);
+}
+
+.queue-table tbody tr.status-row-pending {
+  box-shadow: inset 3px 0 0 #f0c987;
+}
+.queue-table tbody tr.status-row-doing {
+  box-shadow: inset 3px 0 0 #5eead4;
+}
+.queue-table tbody tr.status-row-done {
+  box-shadow: inset 3px 0 0 #6ee7b7;
+}
+.queue-table tbody tr.status-row-cancel {
+  box-shadow: inset 3px 0 0 #fda4af;
+  opacity: 0.85;
+}
+
+.queue-time {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.queue-id {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.queue-summary {
+  max-width: 240px;
+  white-space: normal;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.queue-fb {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.queue-price {
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-table .svc-chip {
+  font-size: 0.78rem;
+}
+
+.queue-table .status-badge {
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
   .admin-summary,
   .staff-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queue-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .queue-hero-actions {
+    justify-content: space-between;
+  }
+
+  .queue-summary {
+    max-width: 180px;
   }
 }
 
@@ -1993,4 +2184,17 @@ html, body {
   .staff-job-head { flex-direction: column; }
   .staff-job-actions { flex-direction: column; align-items: stretch; }
   .staff-job-actions .btn-status { width: 100%; }
+
+  .queue-hero {
+    padding: 1.1rem 1.15rem;
+  }
+
+  .queue-table th,
+  .queue-table td {
+    padding: 0.75rem 0.7rem;
+  }
+
+  .queue-table-wrap {
+    max-height: 70vh;
+  }
 }

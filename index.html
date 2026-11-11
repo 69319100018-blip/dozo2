@@ -888,22 +888,27 @@
 
       <!-- ===== HISTORY / PUBLIC QUEUE VIEW ===== -->
       <div id="view-history" class="view">
-        <section class="welcome-section">
-          <h2>คิวออเดอร์</h2>
-          <p>ตารางคิวสาธารณะ — ทุกคนดูสถานะได้ · ภาพแนบของลูกค้าไม่แสดงในหน้านี้</p>
-        </section>
-        <div class="glass" style="padding:1rem 1.1rem; margin-bottom:1rem">
-          <div class="admin-toolbar" style="margin:0; gap:0.75rem; flex-wrap:wrap">
-            <span id="queue-count" class="muted">-</span>
-            <button type="button" class="btn-secondary" id="btn-refresh-queue">รีเฟรช</button>
+        <section class="queue-hero glass">
+          <div class="queue-hero-text">
+            <p class="queue-kicker">Live Queue</p>
+            <h2>คิวออเดอร์</h2>
+            <p>ตารางคิวสาธารณะ — ดูสถานะได้ทุกคน · ภาพแนบของลูกค้าไม่แสดงในหน้านี้</p>
           </div>
-        </div>
-        <div class="admin-table-wrap glass">
-          <table class="admin-table" id="queue-table">
+          <div class="queue-hero-actions">
+            <div class="queue-count-pill">
+              <span class="queue-count-label">รายการในคิว</span>
+              <strong id="queue-count">-</strong>
+            </div>
+            <button type="button" class="btn-secondary btn-queue-refresh" id="btn-refresh-queue">↻ รีเฟรช</button>
+          </div>
+        </section>
+
+        <div class="queue-table-wrap glass">
+          <table class="queue-table" id="queue-table">
             <thead>
               <tr>
                 <th>เวลา</th>
-                <th>#</th>
+                <th>รหัส</th>
                 <th>บริการ</th>
                 <th>รายละเอียด</th>
                 <th>ชื่อเฟส</th>
