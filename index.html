@@ -252,9 +252,27 @@
             <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
 
+          <!-- ภาพแมพตรวจสอบพื้นที่ -->
+          <section class="form-section glass">
+            <h3 class="section-title">3. แนบภาพแผนที่ (แมพ)</h3>
+            <div class="form-group">
+              <label>ภาพแมพปัจจุบัน <span class="required">*จำเป็น</span></label>
+              <div class="upload-area" id="farm-map-area">
+                <input type="file" id="farm-map-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="upload-placeholder" id="farm-map-placeholder">
+                  <span>🗺️ คลิกหรือลากภาพแมพมาวางที่นี่</span>
+                  <small>แคปหน้าจอแผนที่ · JPG, PNG, WEBP ≤ 3 MB</small>
+                </div>
+                <img id="farm-map-preview" class="slip-preview hidden" alt="ตัวอย่างภาพแมพ" />
+              </div>
+              <p class="hint">ใช้ประเมินพื้นที่ที่เหลือ / ว่างานนี้ผ่านได้หรือไม่ (โดยเฉพาะ AR สูง)</p>
+              <p class="hint warn" id="farm-map-error">ต้องอัปโหลดภาพแมพก่อนจึงจะกดสั่งซื้อได้</p>
+            </div>
+          </section>
+
           <!-- ข้อห้าม -->
           <section class="form-section glass">
-            <h3 class="section-title">3. ข้อห้ามที่ห้ามผู้รับงานทำ</h3>
+            <h3 class="section-title">4. ข้อห้ามที่ห้ามผู้รับงานทำ</h3>
             <div class="form-group">
               <label for="prohibitions">ระบุสิ่งที่ห้ามทำในงานนี้ (ถ้ามี)</label>
               <textarea id="prohibitions" rows="3" placeholder="เช่น ห้ามใช้ตัวละครบางตัว, ห้ามเปิดหีบ, ห้ามคุยในเกม ฯลฯ"></textarea>
@@ -263,7 +281,7 @@
 
           <!-- สตรีม -->
           <section class="form-section glass">
-            <h3 class="section-title">4. การสตรีมจอ</h3>
+            <h3 class="section-title">5. การสตรีมจอ</h3>
             <div class="radio-group">
               <label class="radio-label">
                 <input type="radio" name="stream" value="yes" />
@@ -278,7 +296,7 @@
 
           <!-- ชำระเงิน + สลิป -->
           <section class="form-section glass">
-            <h3 class="section-title">5. ชำระเงิน &amp; อัปโหลดสลิป</h3>
+            <h3 class="section-title">6. ชำระเงิน &amp; อัปโหลดสลิป</h3>
             <p class="hint">เลือกแพ็กเกจ แล้วกดปุ่มสร้าง QR PromptPay ตามยอด จากนั้นอัปโหลดสลิป</p>
 
             <div class="qr-generate-row">

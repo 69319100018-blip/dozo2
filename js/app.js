@@ -178,7 +178,7 @@ function privateFileLink(pathname, label) {
 }
 
 function attachmentLabelForService(service) {
-  if (service === "explore") return "ดูภาพแมพ";
+  if (service === "explore" || service === "farm-gem") return "ดูภาพแมพ";
   if (service === "build-char") return "ดูภาพตัวละคร";
   if (service === "material") return "ดูภาพวัสดุ";
   return "ดูไฟล์แนบ";
@@ -274,6 +274,8 @@ const CHARACTERS = [
 let selectedPackage = null;
 let hasSlip = false;
 let selectedFarmSlipFile = null;
+let hasFarmMap = false;
+let selectedFarmMapFile = null;
 let selectedMatScreenshotFile = null;
 let selectedMatSlipFile = null;
 let selectedBuildScreenshotFile = null;
@@ -592,9 +594,21 @@ function renderPackages() {
   selectedPackage = null;
   hasSlip = false;
   selectedFarmSlipFile = null;
+  hasFarmMap = false;
+  selectedFarmMapFile = null;
   if (slipUpload) slipUpload.value = "";
   slipPreview?.classList.add("hidden");
   if (uploadPlaceholder) uploadPlaceholder.style.display = "block";
+  const farmMapPreview = document.getElementById("farm-map-preview");
+  const farmMapPlaceholder = document.getElementById("farm-map-placeholder");
+  const farmMapInput = document.getElementById("farm-map-upload");
+  if (farmMapPreview) {
+    farmMapPreview.src = "";
+    farmMapPreview.classList.add("hidden");
+  }
+  if (farmMapPlaceholder) farmMapPlaceholder.style.display = "block";
+  if (farmMapInput) farmMapInput.value = "";
+  document.getElementById("farm-map-error")?.classList.remove("show");
   updateTotal();
   updateSubmitState();
 
@@ -814,8 +828,17 @@ uploadArea?.addEventListener("drop", (e) => {
   if (file) handleSlipFile(file);
 });
 
+bindImageUpload({
+  inputId: "farm-map-upload",
+  areaId: "farm-map-area",
+  placeholderId: "farm-map-placeholder",
+  previewId: "farm-map-preview",
+  errorId: "farm-map-error",
+  onChange: (ok, file) => { selectedFarmMapFile = file || null; hasFarmMap = ok; updateSubmitState(); }
+});
+
 function updateSubmitState() {
-  const canSubmit = !!selectedPackage && hasSlip;
+  const canSubmit = !!selectedPackage && hasFarmMap && hasSlip;
   btnSubmitOrder.disabled = !canSubmit;
 }
 
@@ -844,6 +867,7 @@ function validateGameAccount(account) {
 farmForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedPackage) { alert("กรุณาเลือกจำนวนเจม"); return; }
+  if (!hasFarmMap || !selectedFarmMapFile) { document.getElementById("farm-map-error")?.classList.add("show"); return; }
   if (!hasSlip || !selectedFarmSlipFile) { slipError.classList.add("show"); return; }
 
   const account = readGameAccount("farm");
@@ -869,7 +893,11 @@ farmForm?.addEventListener("submit", async (e) => {
       gameUsername: account.name,
       gameUid: account.uid,
       details
-    }, { slipFile: selectedFarmSlipFile });
+    }, {
+      slipFile: selectedFarmSlipFile,
+      attachmentFile: selectedFarmMapFile,
+      attachmentPurpose: "map_screenshot"
+    });
 
     alert(
       `✅ ส่งคำสั่งซื้อสำเร็จ!\n\n` +

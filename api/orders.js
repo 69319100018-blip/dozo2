@@ -1,4 +1,4 @@
-import {
+	import {
   assertSameOrigin,
   errorMessage,
   getSessionUser,
@@ -315,7 +315,7 @@ async function handler(request) {
       if (service === "material" && !validateUploadPath(attachmentPath, user.id)) {
         return json({ error: "กรุณาอัปโหลดภาพวัสดุใหม่" }, 400);
       }
-      if (service === "explore" && !validateUploadPath(attachmentPath, user.id)) {
+      if ((service === "explore" || service === "farm-gem") && !validateUploadPath(attachmentPath, user.id)) {
         return json({ error: "กรุณาอัปโหลดภาพแมพเพื่อตรวจสอบพื้นที่" }, 400);
       }
       if (service === "build-char" && attachmentPath && !validateUploadPath(attachmentPath, user.id)) {
