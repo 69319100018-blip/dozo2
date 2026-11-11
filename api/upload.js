@@ -20,8 +20,8 @@ const ALLOWED_TYPES = new Map([
 async function handler(request) {
   try {
     if (request.method === "POST") {
+      // อนุญาตอัปโหลดโดยไม่ล็อกอิน (guest)
       const user = await getSessionUser(request);
-      if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
       assertSameOrigin(request);
       const form = await request.formData();
       const file = form.get("file");
@@ -50,7 +50,8 @@ async function handler(request) {
       }
 
       const ext = ALLOWED_TYPES.get(detectedType);
-      const pathname = `orders/${user.id}/${purpose}-${randomUUID()}.${ext}`;
+      const ownerKey = user?.id || `guest/${randomUUID()}`;
+      const pathname = `orders/${ownerKey}/${purpose}-${randomUUID()}.${ext}`;
       const blob = await put(pathname, file, {
         access: "private",
         addRandomSuffix: false,

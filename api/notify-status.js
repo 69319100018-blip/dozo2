@@ -1,11 +1,11 @@
 /**
  * เช็กสถานะระบบแจ้งเตือน (ไม่โชว์ secret)
  * GET  /api/notify-status          — ดูว่า env พร้อมหรือยัง
- * POST /api/notify-status          — ส่งข้อความทดสอบ (เฉพาะ admin ที่ล็อกอิน)
+ * POST /api/notify-status          — ยิงออเดอร์ทดสอบ (เฉพาะ admin ที่ล็อกอิน)
  */
 
 import { notifyNewOrderDiscord } from "../lib/discord.js";
-import { getLineConfigStatus, pushLineText } from "../lib/line.js";
+import { buildNewOrderMessage, getLineConfigStatus, pushLineText } from "../lib/line.js";
 import { assertSameOrigin, getSessionUser, json } from "../lib/server.js";
 
 function discordConfigured() {
@@ -40,7 +40,7 @@ async function handler(request) {
       ready: line.ready || discord.hasWebhook,
       hint: !line.ready && !discord.hasWebhook
         ? "ยังไม่ได้ตั้ง LINE_NOTIFY_TO/TOKEN หรือ DISCORD_WEBHOOK_URL"
-        : "มีอย่างน้อย 1 ช่องพร้อม — ใช้ POST (admin) เพื่อทดสอบส่งข้อความ",
+        : "มีอย่างน้อย 1 ช่องพร้อม — ใช้ POST (admin) เพื่อยิงออเดอร์ทดสอบ",
     });
   }
 
@@ -50,25 +50,24 @@ async function handler(request) {
     if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
     if (user.role !== "admin") return json({ error: "เฉพาะแอดมินเท่านั้น" }, 403);
 
+    // รูปแบบเดียวกับออเดอร์จริง (ชื่อที่ตั้ง + ตัวอย่างลิงก์ภาพแมพ)
     const sample = {
       orderNumber: "TEST",
       service: "farm-gem",
-      summary: "ข้อความทดสอบจากระบบ Dozo",
-      gameUsername: "test-user",
-      gameUid: "000000000",
+      summary: "16,000 เจม · ทดสอบระบบแจ้งเตือน",
+      gameUsername: "test-traveler",
+      gameUid: "812345678",
       customerName: user.displayName || "ผู้ทดสอบ",
       customerEmail: user.email || "admin@test",
-      totalPrice: 0,
-      attachmentViewUrl: null,
+      totalPrice: 1090,
+      attachmentViewUrl: "https://dozo2.vercel.app/#admin",
       attachmentLabel: "ดูภาพแมพ",
     };
 
     const results = {};
 
     if (line.ready) {
-      results.line = await pushLineText(
-        "🔔 ทดสอบแจ้งเตือน Dozo Genshin\nระบบ LINE ทำงานปกติ"
-      );
+      results.line = await pushLineText(buildNewOrderMessage(sample));
     } else {
       results.line = {
         skipped: true,
@@ -82,7 +81,7 @@ async function handler(request) {
       results.discord = { skipped: true, reason: "missing_webhook" };
     }
 
-    return json({ ok: true, results });
+    return json({ ok: true, sample, results });
   }
 
   return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST" });

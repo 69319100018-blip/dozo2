@@ -4,7 +4,7 @@ import {
   errorMessage,
   getSessionUser,
   getSql,
-  isPrivateUploadPathForUser,
+  isValidOrderUploadPath,
   json,
 } from "../lib/server.js";
 import { notifyNewOrderAll } from "../lib/notify.js";
@@ -44,7 +44,7 @@ function cleanStream(value) {
 }
 
 function validateUploadPath(pathname, userId) {
-  return isPrivateUploadPathForUser(pathname, userId);
+  return isValidOrderUploadPath(pathname, userId || null);
 }
 
 function buildDetails(service, raw, userRole = "customer") {
@@ -205,11 +205,10 @@ function buildDetails(service, raw, userRole = "customer") {
 async function handler(request) {
   try {
     const user = await getSessionUser(request);
-    if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
-
     const sql = getSql();
 
     if (request.method === "GET") {
+      if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
       let orders;
       if (user.role === "admin") {
         orders = await sql`
@@ -219,6 +218,8 @@ async function handler(request) {
             o.service,
             o.summary,
             u.email AS "customerEmail",
+            u.display_name AS "customerDisplayName",
+            o.facebook_name AS "facebookName",
             o.game_username AS "gameUsername",
             o.game_uid AS uid,
             o.status,
@@ -232,7 +233,7 @@ async function handler(request) {
             o.created_at AS "createdAt",
             o.updated_at AS "updatedAt"
           FROM orders o
-          JOIN users u ON u.id = o.customer_id
+          LEFT JOIN users u ON u.id = o.customer_id
           LEFT JOIN users s ON s.id = o.assigned_staff_id
           ORDER BY o.created_at DESC
           LIMIT 500
@@ -246,6 +247,8 @@ async function handler(request) {
             o.service,
             o.summary,
             u.email AS "customerEmail",
+            u.display_name AS "customerDisplayName",
+            o.facebook_name AS "facebookName",
             o.game_username AS "gameUsername",
             o.game_uid AS uid,
             o.status,
@@ -259,7 +262,7 @@ async function handler(request) {
             o.created_at AS "createdAt",
             o.updated_at AS "updatedAt"
           FROM orders o
-          JOIN users u ON u.id = o.customer_id
+          LEFT JOIN users u ON u.id = o.customer_id
           LEFT JOIN users s ON s.id = o.assigned_staff_id
           WHERE o.assigned_staff_id = ${user.id}
           ORDER BY o.created_at DESC
@@ -273,6 +276,8 @@ async function handler(request) {
             o.service,
             o.summary,
             u.email AS "customerEmail",
+            u.display_name AS "customerDisplayName",
+            o.facebook_name AS "facebookName",
             o.game_username AS "gameUsername",
             o.game_uid AS uid,
             o.status,
@@ -286,7 +291,7 @@ async function handler(request) {
             o.created_at AS "createdAt",
             o.updated_at AS "updatedAt"
           FROM orders o
-          JOIN users u ON u.id = o.customer_id
+          LEFT JOIN users u ON u.id = o.customer_id
           LEFT JOIN users s ON s.id = o.assigned_staff_id
           WHERE o.customer_id = ${user.id}
           ORDER BY o.created_at DESC
@@ -298,7 +303,8 @@ async function handler(request) {
 
     if (request.method === "POST") {
       assertSameOrigin(request);
-      if (user.role === "staff") {
+      // สั่งซื้อได้โดยไม่ล็อกอิน — ห้ามเฉพาะบัญชี staff
+      if (user?.role === "staff") {
         return json({ error: "บัญชีลูกทีมไม่สามารถสั่งซื้อผ่านระบบนี้ได้" }, 403);
       }
 
@@ -310,34 +316,41 @@ async function handler(request) {
       const gameUid = cleanText(body.gameUid, 40);
       if (!gameUsername || !gameUid) return json({ error: "กรุณากรอก Username และ UID ให้ครบ" }, 400);
 
+      const facebookName = cleanText(body.facebookName, 80);
+      if (!facebookName || facebookName.length < 2) {
+        return json({ error: "กรุณากรอกชื่อเฟสเพื่อยืนยันตัวตน" }, 400);
+      }
+
+      const userId = user?.id || null;
       const slipPath = cleanText(body.slipPath, 500);
       const attachmentPath = body.attachmentPath ? cleanText(body.attachmentPath, 500) : null;
-      if (!validateUploadPath(slipPath, user.id)) return json({ error: "กรุณาอัปโหลดสลิปใหม่" }, 400);
-      if (service === "material" && !validateUploadPath(attachmentPath, user.id)) {
+      if (!validateUploadPath(slipPath, userId)) return json({ error: "กรุณาอัปโหลดสลิปใหม่" }, 400);
+      if (service === "material" && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "กรุณาอัปโหลดภาพวัสดุใหม่" }, 400);
       }
-      if ((service === "explore" || service === "farm-gem") && !validateUploadPath(attachmentPath, user.id)) {
+      if ((service === "explore" || service === "farm-gem") && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "กรุณาอัปโหลดภาพแมพเพื่อตรวจสอบพื้นที่" }, 400);
       }
-      if (service === "build-char" && attachmentPath && !validateUploadPath(attachmentPath, user.id)) {
+      if (service === "build-char" && attachmentPath && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
-      if (attachmentPath && !validateUploadPath(attachmentPath, user.id)) {
+      if (attachmentPath && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
 
-      const normalized = buildDetails(service, body.details, user.role);
+      const normalized = buildDetails(service, body.details, user?.role || "customer");
       const [order] = await sql`
         INSERT INTO orders (
-          customer_id, service, summary, game_username, game_uid,
+          customer_id, service, summary, game_username, game_uid, facebook_name,
           status, total_price, details, slip_path, attachment_path
         ) VALUES (
-          ${user.id}, ${service}, ${normalized.summary}, ${gameUsername}, ${gameUid},
+          ${userId}, ${service}, ${normalized.summary}, ${gameUsername}, ${gameUid}, ${facebookName},
           'pending', ${normalized.totalPrice}, ${JSON.stringify(normalized.details)}::jsonb,
           ${slipPath}, ${attachmentPath}
         )
         RETURNING id::text AS id, order_number AS "orderNumber", service,
           summary, game_username AS "gameUsername", game_uid AS uid,
+          facebook_name AS "facebookName",
           status, total_price AS "totalPrice", created_at AS "createdAt"
       `;
 
@@ -361,8 +374,8 @@ async function handler(request) {
           summary: order.summary,
           gameUsername: order.gameUsername,
           gameUid: order.uid,
-          customerName: user.displayName || "",
-          customerEmail: user.email,
+          customerName: facebookName,
+          customerEmail: user?.email || "",
           totalPrice: order.totalPrice,
           attachmentViewUrl,
           attachmentLabel,
@@ -376,6 +389,7 @@ async function handler(request) {
 
     if (request.method === "PATCH") {
       assertSameOrigin(request);
+      if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
       const id = new URL(request.url).searchParams.get("id");
       const body = await request.json();
       if (!id || !UUID_RE.test(id)) return json({ error: "รหัสออเดอร์ไม่ถูกต้อง" }, 400);

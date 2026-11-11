@@ -30,6 +30,7 @@ let isRegisterMode = false;
 const userEmailEl = document.getElementById("user-email");
 const displayNameEl = document.getElementById("display-name");
 const logoutBtn = document.getElementById("logout-btn");
+const loginHeaderBtn = document.getElementById("login-header-btn");
 
 // Views
 const views = {
@@ -333,7 +334,8 @@ function startLoading() {
     if (progress >= 100) {
       clearInterval(interval);
       setTimeout(() => {
-        switchScreen(loadingScreen, loginScreen);
+        // เข้าหน้าหลักได้เลย ไม่บังคับล็อกอิน
+        switchScreen(loadingScreen, dashboardScreen);
         checkAuthState();
       }, 450);
     }
@@ -431,18 +433,58 @@ function applyRoleChrome(user) {
   }
 }
 
+function updateAuthHeader(user) {
+  const loggedIn = Boolean(user);
+  if (userEmailEl) {
+    userEmailEl.textContent = user?.email || "";
+    userEmailEl.classList.toggle("hidden", !loggedIn);
+  }
+  if (logoutBtn) logoutBtn.classList.toggle("hidden", !loggedIn);
+  if (loginHeaderBtn) loginHeaderBtn.classList.toggle("hidden", loggedIn);
+}
+
+function enterAnonymousMode() {
+  currentUser = null;
+  isAdmin = false;
+  isStaff = false;
+  applyRoleChrome(null);
+  updateAuthHeader(null);
+  if (displayNameEl) displayNameEl.textContent = "นักเดินทาง";
+  // อยู่บน dashboard อยู่แล้ว
+  showView("home");
+}
+
 function goToDashboard(user) {
   currentUser = user;
   applyRoleChrome(user);
-  userEmailEl.textContent = user?.email || "ผู้ใช้";
+  updateAuthHeader(user);
   if (displayNameEl) {
     displayNameEl.textContent = user?.displayName || user?.email?.split("@")[0] || "นักเดินทาง";
   }
 
-  switchScreen(loginScreen, dashboardScreen);
+  // ปิดหน้า login ถ้าเปิดอยู่ แล้วไป dashboard
+  if (loginScreen.classList.contains("active")) {
+    switchScreen(loginScreen, dashboardScreen);
+  } else {
+    dashboardScreen.style.display = "flex";
+    dashboardScreen.classList.add("active");
+  }
   if (isAdmin) showView("admin");
   else if (isStaff) showView("staff");
   else showView("home");
+}
+
+function openLoginScreen() {
+  hideError();
+  setAuthMode(false);
+  loginForm?.reset();
+  dashboardScreen.classList.remove("active");
+  setTimeout(() => {
+    dashboardScreen.style.display = "none";
+    loginScreen.style.display = "flex";
+    void loginScreen.offsetWidth;
+    loginScreen.classList.add("active");
+  }, 200);
 }
 
 loginForm.addEventListener("submit", async (e) => {
@@ -481,7 +523,15 @@ registerLink.addEventListener("click", (e) => {
   setAuthMode(!isRegisterMode);
 });
 
-logoutBtn.addEventListener("click", async () => {
+document.getElementById("skip-login-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (loginScreen.classList.contains("active")) {
+    switchScreen(loginScreen, dashboardScreen);
+  }
+  enterAnonymousMode();
+});
+
+logoutBtn?.addEventListener("click", async () => {
   try {
     await DozoAPI.logout();
   } catch (error) {
@@ -492,17 +542,11 @@ logoutBtn.addEventListener("click", async () => {
   isStaff = false;
   staffListCache = [];
   adminOrdersCache = [];
-  applyRoleChrome(null);
-  dashboardScreen.classList.remove("active");
-  setTimeout(() => {
-    dashboardScreen.style.display = "none";
-    loginScreen.style.display = "flex";
-    void loginScreen.offsetWidth;
-    loginScreen.classList.add("active");
-    loginForm.reset();
-    setAuthMode(false);
-    hideError();
-  }, 400);
+  enterAnonymousMode();
+});
+
+loginHeaderBtn?.addEventListener("click", () => {
+  openLoginScreen();
 });
 
 async function checkAuthState() {
@@ -510,9 +554,11 @@ async function checkAuthState() {
     await loadPromptPayConfig();
     const user = await DozoAPI.me();
     if (user) goToDashboard(user);
+    else enterAnonymousMode();
   } catch (error) {
     console.error("Session check failed:", error);
-    showError("เชื่อมต่อระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ");
+    // ไม่บล็อกการใช้งาน — เข้าแบบไม่ล็อกอินได้
+    enterAnonymousMode();
   }
 }
 
@@ -873,6 +919,8 @@ farmForm?.addEventListener("submit", async (e) => {
   const account = readGameAccount("farm");
   const accountError = validateGameAccount(account);
   if (accountError) { alert(accountError); return; }
+  const facebookName = document.getElementById("farm-facebook-name")?.value.trim() || "";
+  if (!facebookName || facebookName.length < 2) { alert("กรุณากรอกชื่อเฟสเพื่อยืนยันตัวตน"); return; }
 
   const details = {
     gems: selectedPackage.gems,
@@ -892,6 +940,7 @@ farmForm?.addEventListener("submit", async (e) => {
       service: "farm-gem",
       gameUsername: account.name,
       gameUid: account.uid,
+      facebookName,
       details
     }, {
       slipFile: selectedFarmSlipFile,
@@ -1509,6 +1558,8 @@ abyssForm?.addEventListener("submit", async (e) => {
   const account = readGameAccount("abyss");
   const accountError = validateGameAccount(account);
   if (accountError) { alert(accountError); return; }
+  const facebookName = document.getElementById("abyss-facebook-name")?.value.trim() || "";
+  if (!facebookName || facebookName.length < 2) { alert("กรุณากรอกชื่อเฟสเพื่อยืนยันตัวตน"); return; }
 
   const details = {
     packageId: selectedAbyss.id,
@@ -1524,7 +1575,13 @@ abyssForm?.addEventListener("submit", async (e) => {
   };
   btnSubmitAbyss.disabled = true;
   try {
-    const saved = await saveOrder({ service: "abyss", gameUsername: account.name, gameUid: account.uid, details }, { slipFile: selectedAbyssSlipFile });
+    const saved = await saveOrder({
+      service: "abyss",
+      gameUsername: account.name,
+      gameUid: account.uid,
+      facebookName,
+      details
+    }, { slipFile: selectedAbyssSlipFile });
     alert(`✅ ส่งคำสั่งซื้อเคลียร์ Abyss สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเป้าหมาย: ${details.package}\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
   } catch (error) {
     await handleOrderError(error);
@@ -1543,6 +1600,8 @@ exploreForm?.addEventListener("submit", async (e) => {
   const account = readGameAccount("explore");
   const accountError = validateGameAccount(account);
   if (accountError) { alert(accountError); return; }
+  const facebookName = document.getElementById("explore-facebook-name")?.value.trim() || "";
+  if (!facebookName || facebookName.length < 2) { alert("กรุณากรอกชื่อเฟสเพื่อยืนยันตัวตน"); return; }
 
   const details = {
     packageId: selectedExplore.id,
@@ -1562,7 +1621,7 @@ exploreForm?.addEventListener("submit", async (e) => {
   btnSubmitExplore.disabled = true;
   try {
     const saved = await saveOrder(
-      { service: "explore", gameUsername: account.name, gameUid: account.uid, details },
+      { service: "explore", gameUsername: account.name, gameUid: account.uid, facebookName, details },
       { slipFile: selectedExploreSlipFile, attachmentFile: selectedExploreMapFile, attachmentPurpose: "map_screenshot" }
     );
     alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเมือง: ${details.package}\nพื้นที่: ${details.areaCount}/${details.areaMax} · ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
@@ -1678,7 +1737,7 @@ async function renderAdminOrders() {
       <td><span class="svc-chip">${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</span></td>
       <td class="cell-detail">${escapeHtml(o.summary || "-")}<br><small>${files}</small></td>
       <td>
-        <div>${escapeHtml(o.customerEmail || "-")}</div>
+        <div>${escapeHtml(o.facebookName || o.customerDisplayName || o.customerEmail || "ไม่ระบุ")}</div>
         <small class="muted">UID: ${escapeHtml(o.uid || "-")}</small>
       </td>
       <td>
@@ -1764,7 +1823,7 @@ async function renderStaffJobs() {
         <span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span>
       </div>
       <div class="staff-job-meta">
-        <span>ลูกค้า: ${escapeHtml(o.customerEmail || "-")}</span>
+        <span>ลูกค้า: ${escapeHtml(o.facebookName || o.customerDisplayName || o.customerEmail || "ไม่ระบุ")}</span>
         <span>UID: ${escapeHtml(o.uid || "-")}</span>
         <span>Username: ${escapeHtml(o.gameUsername || "-")}</span>
         <span>${escapeHtml(formatTime(o.createdAt))}</span>
@@ -1794,6 +1853,15 @@ async function renderStaffJobs() {
 async function renderCustomerHistory() {
   const container = document.getElementById("customer-history-list");
   if (!container) return;
+  if (!currentUser) {
+    container.innerHTML = `<div class="empty-state glass">
+      <p>เข้าสู่ระบบเพื่อดูประวัติออเดอร์ที่ผูกกับบัญชี</p>
+      <p class="muted">สั่งซื้อได้โดยไม่ต้องล็อกอิน — ใช้ชื่อเฟสยืนยันตัวตนได้เลย</p>
+      <button class="btn-service" type="button" id="history-login-btn">เข้าสู่ระบบ</button>
+    </div>`;
+    document.getElementById("history-login-btn")?.addEventListener("click", () => openLoginScreen());
+    return;
+  }
   try {
     const orders = await loadOrders();
     if (!orders.length) {

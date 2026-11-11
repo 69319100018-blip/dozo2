@@ -21,12 +21,15 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number BIGINT GENERATED ALWAYS AS IDENTITY UNIQUE,
-  customer_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  -- nullable = ออเดอร์จากผู้ใช้ที่ไม่ล็อกอิน (anonymous)
+  customer_id UUID REFERENCES users(id) ON DELETE RESTRICT,
   service TEXT NOT NULL
     CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore')),
   summary TEXT NOT NULL,
   game_username TEXT NOT NULL,
   game_uid TEXT NOT NULL,
+  -- ชื่อ Facebook ใช้ยืนยันตัวตน (บังคับตอนสั่งซื้อ)
+  facebook_name TEXT,
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'doing', 'done', 'cancel')),
   total_price NUMERIC(10,2),

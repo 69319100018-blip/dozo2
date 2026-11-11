@@ -77,6 +77,9 @@
       <p class="login-footer">
         <span id="auth-footer-text">ยังไม่มีบัญชี?</span> <a href="#" id="register-link">สมัครสมาชิก</a>
       </p>
+      <p class="login-footer" style="margin-top:0.5rem">
+        <a href="#" id="skip-login-link">ข้าม — สั่งซื้อโดยไม่ล็อกอิน</a>
+      </p>
       <div id="auth-error" class="error-message hidden"></div>
     </div>
   </div>
@@ -99,8 +102,9 @@
       </nav>
       <div class="header-right">
         <span id="role-badge" class="role-badge hidden"></span>
-        <span id="user-email" class="user-email"></span>
-        <button id="logout-btn" class="btn-logout">ออกจากระบบ</button>
+        <span id="user-email" class="user-email hidden"></span>
+        <button id="login-header-btn" class="btn-logout" type="button">เข้าสู่ระบบ</button>
+        <button id="logout-btn" class="btn-logout hidden" type="button">ออกจากระบบ</button>
       </div>
     </header>
 
@@ -249,6 +253,11 @@
                 <input type="number" id="farm-game-ar" placeholder="เช่น 55" min="1" max="60" required />
               </div>
             </div>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label for="farm-facebook-name">ชื่อเฟส (Facebook) <span class="required">*จำเป็น</span></label>
+              <input type="text" id="farm-facebook-name" placeholder="ชื่อเฟสที่ใช้ติดต่อร้าน" maxlength="80" required />
+              <p class="hint">ใช้ยืนยันตัวตนและประสานงานหลังสั่งซื้อ</p>
+            </div>
             <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
 
@@ -387,6 +396,11 @@
                 <label for="mat-id">UID / ID</label>
                 <input type="text" id="mat-id" placeholder="เช่น 812345678" required />
               </div>
+            </div>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label for="mat-facebook-name">ชื่อเฟส (Facebook) <span class="required">*จำเป็น</span></label>
+              <input type="text" id="mat-facebook-name" placeholder="ชื่อเฟสที่ใช้ติดต่อร้าน" maxlength="80" required />
+              <p class="hint">ใช้ยืนยันตัวตนและประสานงานหลังสั่งซื้อ</p>
             </div>
             <p class="hint warn">เพื่อความปลอดภัย เว็บไซต์จะไม่ขอหรือจัดเก็บรหัสผ่านบัญชีเกม</p>
           </section>
@@ -624,6 +638,11 @@
                 <input type="number" id="abyss-game-ar" placeholder="เช่น 55" min="1" max="60" required />
               </div>
             </div>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label for="abyss-facebook-name">ชื่อเฟส (Facebook) <span class="required">*จำเป็น</span></label>
+              <input type="text" id="abyss-facebook-name" placeholder="ชื่อเฟสที่ใช้ติดต่อร้าน" maxlength="80" required />
+              <p class="hint">ใช้ยืนยันตัวตนและประสานงานหลังสั่งซื้อ</p>
+            </div>
             <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
 
@@ -797,6 +816,11 @@
                 <label for="explore-game-ar">6. AR</label>
                 <input type="number" id="explore-game-ar" placeholder="เช่น 55" min="1" max="60" required />
               </div>
+            </div>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label for="explore-facebook-name">ชื่อเฟส (Facebook) <span class="required">*จำเป็น</span></label>
+              <input type="text" id="explore-facebook-name" placeholder="ชื่อเฟสที่ใช้ติดต่อร้าน" maxlength="80" required />
+              <p class="hint">ใช้ยืนยันตัวตนและประสานงานหลังสั่งซื้อ</p>
             </div>
             <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
           </section>
