@@ -595,6 +595,20 @@ function showView(name) {
   if (name === "history") renderCustomerHistory();
 }
 
+// หลังสั่งซื้อสำเร็จ — เด้งไปตารางคิวให้ลูกค้าแคปไปแจ้งร้าน
+function goToQueueAfterOrder({ orderNumber, extraLines = "" } = {}) {
+  const lines = [
+    "✅ ส่งคำสั่งซื้อสำเร็จ!",
+    "",
+    orderNumber != null ? `รหัสออเดอร์: #${orderNumber}` : null,
+    extraLines || null,
+    "",
+    "กำลังพาไปหน้าคิวออเดอร์ — กรุณาแคปคิวของตัวเองแล้วส่งมาทาง Facebook: Do Zo Genshin",
+  ].filter((x) => x != null);
+  alert(lines.join("\n"));
+  showView("history");
+}
+
 document.querySelectorAll(".nav-item").forEach(btn => {
   btn.addEventListener("click", () => showView(btn.dataset.view));
 });
@@ -948,13 +962,10 @@ farmForm?.addEventListener("submit", async (e) => {
       attachmentPurpose: "map_screenshot"
     });
 
-    alert(
-      `✅ ส่งคำสั่งซื้อสำเร็จ!\n\n` +
-      `รหัสออเดอร์: ${saved.order.orderNumber}\n` +
-      `จำนวน: ${details.gems.toLocaleString()} เจม\n` +
-      `ยอดชำระ: ${saved.order.totalPrice} ฿\n\n` +
-      `ระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
-    );
+    goToQueueAfterOrder({
+      orderNumber: saved.order.orderNumber,
+      extraLines: `จำนวน: ${details.gems.toLocaleString()} เจม\nยอดชำระ: ${saved.order.totalPrice} ฿`,
+    });
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1075,13 +1086,10 @@ materialForm?.addEventListener("submit", async (e) => {
       gameUid: uidVal,
       details
     }, { slipFile: selectedMatSlipFile, attachmentFile: selectedMatScreenshotFile });
-    alert(
-      `✅ ส่งคำสั่งซื้อหาวัสดุสำเร็จ!\n\n` +
-      `รหัสออเดอร์: ${savedMat.order.orderNumber}\n` +
-      `ประเภท: ${details.materialType}\n` +
-      (details.forCharacter ? `ใช้กับ: ${details.forCharacter}\n` : "") +
-      `\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
-    );
+    goToQueueAfterOrder({
+      orderNumber: savedMat.order.orderNumber,
+      extraLines: `ประเภท: ${details.materialType}` + (details.forCharacter ? `\nใช้กับ: ${details.forCharacter}` : ""),
+    });
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1197,13 +1205,10 @@ buildForm?.addEventListener("submit", async (e) => {
       slipFile: selectedBuildSlipFile,
       attachmentFile: selectedBuildScreenshotFile || null
     });
-    alert(
-      `✅ ส่งคำสั่งซื้อปั้นตัวละครสำเร็จ!\n\n` +
-      `รหัสออเดอร์: ${saved.order.orderNumber}\n` +
-      `ตัวละคร: ${details.character}\n` +
-      `เป้าหมาย: ${details.goal}\n\n` +
-      `ระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin เพื่อประสานงาน`
-    );
+    goToQueueAfterOrder({
+      orderNumber: saved.order.orderNumber,
+      extraLines: `ตัวละคร: ${details.character}\nเป้าหมาย: ${details.goal}`,
+    });
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1582,7 +1587,10 @@ abyssForm?.addEventListener("submit", async (e) => {
       facebookName,
       details
     }, { slipFile: selectedAbyssSlipFile });
-    alert(`✅ ส่งคำสั่งซื้อเคลียร์ Abyss สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเป้าหมาย: ${details.package}\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+    goToQueueAfterOrder({
+      orderNumber: saved.order.orderNumber,
+      extraLines: `เป้าหมาย: ${details.package}\nยอด: ${saved.order.totalPrice ?? "-"} ฿`,
+    });
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1624,7 +1632,10 @@ exploreForm?.addEventListener("submit", async (e) => {
       { service: "explore", gameUsername: account.name, gameUid: account.uid, facebookName, details },
       { slipFile: selectedExploreSlipFile, attachmentFile: selectedExploreMapFile, attachmentPurpose: "map_screenshot" }
     );
-    alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเมือง: ${details.package}\nพื้นที่: ${details.areaCount}/${details.areaMax} · ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
+    goToQueueAfterOrder({
+      orderNumber: saved.order.orderNumber,
+      extraLines: `เมือง: ${details.package}\nพื้นที่: ${details.areaCount}/${details.areaMax} · ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿`,
+    });
   } catch (error) {
     await handleOrderError(error);
   } finally {
@@ -1851,39 +1862,36 @@ async function renderStaffJobs() {
 }
 
 async function renderCustomerHistory() {
-  const container = document.getElementById("customer-history-list");
-  if (!container) return;
-  if (!currentUser) {
-    container.innerHTML = `<div class="empty-state glass">
-      <p>เข้าสู่ระบบเพื่อดูประวัติออเดอร์ที่ผูกกับบัญชี</p>
-      <p class="muted">สั่งซื้อได้โดยไม่ต้องล็อกอิน — ใช้ชื่อเฟสยืนยันตัวตนได้เลย</p>
-      <button class="btn-service" type="button" id="history-login-btn">เข้าสู่ระบบ</button>
-    </div>`;
-    document.getElementById("history-login-btn")?.addEventListener("click", () => openLoginScreen());
-    return;
-  }
+  const tbody = document.getElementById("queue-tbody");
+  const countEl = document.getElementById("queue-count");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">กำลังโหลดคิว...</td></tr>`;
   try {
-    const orders = await loadOrders();
+    const orders = await DozoAPI.listPublicQueue();
+    if (countEl) countEl.textContent = `${orders.length} รายการ`;
     if (!orders.length) {
-      container.innerHTML = `<div class="empty-state glass"><p>ยังไม่มีประวัติการสั่งซื้อ</p><button class="btn-service" data-goto="home">ไปเลือกบริการ</button></div>`;
-      container.querySelector("[data-goto]")?.addEventListener("click", () => showView("home"));
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์ในคิว</td></tr>`;
       return;
     }
-    container.innerHTML = orders.map(o => {
-      const status = STATUS_LABEL[o.status] || o.status || "รอดำเนินการ";
-      const files = orderFilesHtml(o);
-      return `<article class="history-card glass">
-        <div class="history-card-head">
-          <h3>${escapeHtml(SERVICE_LABEL[o.service] || o.service)} <span class="order-number">#${escapeHtml(o.orderNumber)}</span></h3>
-          <span class="status-badge status-${escapeHtml(o.status || "pending")}">${escapeHtml(status)}</span>
-        </div>
-        <p>${escapeHtml(o.summary || "-")}</p>
-        <div class="history-meta"><span>UID: ${escapeHtml(o.uid || "-")}</span><span>${escapeHtml(formatTime(o.createdAt))}</span></div>
-        ${files ? `<div class="history-files">${files}</div>` : ""}
-      </article>`;
+    tbody.innerHTML = orders.map((o) => {
+      const st = o.status || "pending";
+      const price =
+        o.totalPrice != null && o.totalPrice !== ""
+          ? `${Number(o.totalPrice).toLocaleString("th-TH")} ฿`
+          : "-";
+      return `<tr>
+        <td>${escapeHtml(formatTime(o.createdAt))}</td>
+        <td>#${escapeHtml(o.orderNumber)}</td>
+        <td><span class="svc-chip">${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</span></td>
+        <td class="cell-detail">${escapeHtml(o.summary || "-")}</td>
+        <td>${escapeHtml(o.facebookName || "-")}</td>
+        <td>${escapeHtml(price)}</td>
+        <td><span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span></td>
+      </tr>`;
     }).join("");
   } catch (error) {
-    container.innerHTML = `<div class="empty-state glass"><p>${escapeHtml(error.message || "โหลดประวัติไม่สำเร็จ")}</p></div>`;
+    if (countEl) countEl.textContent = "-";
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(error.message || "โหลดคิวไม่สำเร็จ")}</td></tr>`;
   }
 }
 
@@ -2049,6 +2057,10 @@ document.getElementById("btn-refresh-team")?.addEventListener("click", renderAdm
 
 document.getElementById("btn-refresh-staff")?.addEventListener("click", () => {
   if (isStaff) renderStaffJobs();
+});
+
+document.getElementById("btn-refresh-queue")?.addEventListener("click", () => {
+  renderCustomerHistory();
 });
 
 // ---------- Start ----------

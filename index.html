@@ -93,7 +93,7 @@
       <nav class="navbar" id="main-nav">
         <!-- ลูกค้า -->
         <button class="nav-item customer-only active" data-view="home">หน้าหลัก</button>
-        <button class="nav-item customer-only" data-view="history">ประวัติออเดอร์</button>
+        <button class="nav-item customer-only" data-view="history">คิวออเดอร์</button>
         <button class="nav-item customer-only" data-view="contact">ติดต่อเรา</button>
         <!-- ลูกทีม -->
         <button class="nav-item staff-only hidden" data-view="staff" id="nav-staff">งานของฉัน</button>
@@ -886,16 +886,35 @@
         </form>
       </div>
 
-      <!-- ===== HISTORY VIEW ===== -->
+      <!-- ===== HISTORY / PUBLIC QUEUE VIEW ===== -->
       <div id="view-history" class="view">
         <section class="welcome-section">
-          <h2>ประวัติออเดอร์</h2>
-          <p>รายการที่คุณเคยสั่งไว้</p>
+          <h2>คิวออเดอร์</h2>
+          <p>ตารางคิวสาธารณะ — ทุกคนดูสถานะได้ · ภาพแนบของลูกค้าไม่แสดงในหน้านี้</p>
         </section>
-        <div id="customer-history-list" class="history-list">
-          <div class="empty-state glass">
-            <p>กำลังโหลดประวัติการสั่งซื้อ...</p>
+        <div class="glass" style="padding:1rem 1.1rem; margin-bottom:1rem">
+          <div class="admin-toolbar" style="margin:0; gap:0.75rem; flex-wrap:wrap">
+            <span id="queue-count" class="muted">-</span>
+            <button type="button" class="btn-secondary" id="btn-refresh-queue">รีเฟรช</button>
           </div>
+        </div>
+        <div class="admin-table-wrap glass">
+          <table class="admin-table" id="queue-table">
+            <thead>
+              <tr>
+                <th>เวลา</th>
+                <th>#</th>
+                <th>บริการ</th>
+                <th>รายละเอียด</th>
+                <th>ชื่อเฟส</th>
+                <th>ยอด</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody id="queue-tbody">
+              <tr><td colspan="7" class="empty-cell">กำลังโหลดคิว...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

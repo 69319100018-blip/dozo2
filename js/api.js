@@ -66,6 +66,11 @@
       return result.orders || [];
     },
 
+    async listPublicQueue() {
+      const result = await request("/api/orders?queue=1", { method: "GET" });
+      return result.orders || [];
+    },
+
     createOrder(order) {
       return request("/api/orders", {
         method: "POST",

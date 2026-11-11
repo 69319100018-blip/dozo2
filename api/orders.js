@@ -208,6 +208,31 @@ async function handler(request) {
     const sql = getSql();
 
     if (request.method === "GET") {
+      const url = new URL(request.url);
+      const wantQueue = url.searchParams.get("queue") === "1" || url.searchParams.get("view") === "queue";
+
+      // ตารางคิวสาธารณะ — ทุกคนดูได้ (ไม่มีสลิป / ภาพแนบ / รหัสผ่าน)
+      if (wantQueue || !user || (user.role !== "admin" && user.role !== "staff")) {
+        // admin/staff ที่ไม่ขอ queue ยังได้ข้อมูลเต็มด้านล่าง
+        if (wantQueue || !user || user.role === "customer" || user.role === "member") {
+          const orders = await sql`
+            SELECT
+              o.order_number AS "orderNumber",
+              o.service,
+              o.summary,
+              o.facebook_name AS "facebookName",
+              o.game_username AS "gameUsername",
+              o.status,
+              o.total_price AS "totalPrice",
+              o.created_at AS "createdAt"
+            FROM orders o
+            ORDER BY o.created_at DESC
+            LIMIT 300
+          `;
+          return json({ orders, public: true });
+        }
+      }
+
       if (!user) return json({ error: "กรุณาเข้าสู่ระบบก่อน" }, 401);
       let orders;
       if (user.role === "admin") {
@@ -269,34 +294,22 @@ async function handler(request) {
           LIMIT 200
         `;
       } else {
+        // fallback คิวสาธารณะ
         orders = await sql`
           SELECT
-            o.id::text AS id,
             o.order_number AS "orderNumber",
             o.service,
             o.summary,
-            u.email AS "customerEmail",
-            u.display_name AS "customerDisplayName",
             o.facebook_name AS "facebookName",
             o.game_username AS "gameUsername",
-            o.game_uid AS uid,
             o.status,
             o.total_price AS "totalPrice",
-            o.details,
-            o.slip_path AS "slipPath",
-            o.attachment_path AS "attachmentPath",
-            o.assigned_staff_id::text AS "assignedStaffId",
-            s.display_name AS "assignedStaffName",
-            s.email AS "assignedStaffEmail",
-            o.created_at AS "createdAt",
-            o.updated_at AS "updatedAt"
+            o.created_at AS "createdAt"
           FROM orders o
-          LEFT JOIN users u ON u.id = o.customer_id
-          LEFT JOIN users s ON s.id = o.assigned_staff_id
-          WHERE o.customer_id = ${user.id}
           ORDER BY o.created_at DESC
-          LIMIT 100
+          LIMIT 300
         `;
+        return json({ orders, public: true });
       }
       return json({ orders });
     }
