@@ -130,6 +130,8 @@ let selectedExplore = null;
 let selectedExplorePercent = null;
 let selectedExploreAreaCount = null;
 let hasExploreSlip = false;
+let hasExploreMap = false;
+let selectedExploreMapFile = null;
 let exploreQrGenerated = false;
 let lastExploreQrAmount = null;
 
@@ -145,12 +147,12 @@ async function loadOrders() {
 }
 
 // รูปจะถูกเก็บใน Private Vercel Blob ส่วน Neon เก็บเฉพาะ pathname
-async function saveOrder(order, { slipFile, attachmentFile = null } = {}) {
+async function saveOrder(order, { slipFile, attachmentFile = null, attachmentPurpose = "material_screenshot" } = {}) {
   if (!slipFile) throw new Error("กรุณาเลือกไฟล์สลิปก่อนสั่งซื้อ");
   const slip = await DozoAPI.uploadFile(slipFile, "slip");
   let attachment = null;
   if (attachmentFile) {
-    attachment = await DozoAPI.uploadFile(attachmentFile, "material_screenshot");
+    attachment = await DozoAPI.uploadFile(attachmentFile, attachmentPurpose);
   }
   return DozoAPI.createOrder({
     ...order,
@@ -173,6 +175,20 @@ function privateFileLink(pathname, label) {
   if (!pathname) return "";
   const url = DozoAPI.fileUrl(pathname);
   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+}
+
+function attachmentLabelForService(service) {
+  if (service === "explore") return "ดูภาพแมพ";
+  if (service === "build-char") return "ดูภาพตัวละคร";
+  if (service === "material") return "ดูภาพวัสดุ";
+  return "ดูไฟล์แนบ";
+}
+
+function orderFilesHtml(o) {
+  return [
+    privateFileLink(o.slipPath, "ดูสลิป"),
+    privateFileLink(o.attachmentPath, attachmentLabelForService(o.service)),
+  ].filter(Boolean).join(" · ");
 }
 
 async function handleOrderError(error) {
@@ -1382,6 +1398,18 @@ function renderExploreOptions() {
   selectedExploreAreaCount = null;
   hasExploreSlip = false;
   selectedExploreSlipFile = null;
+  hasExploreMap = false;
+  selectedExploreMapFile = null;
+  const mapPreview = document.getElementById("explore-map-preview");
+  const mapPlaceholder = document.getElementById("explore-map-placeholder");
+  const mapInput = document.getElementById("explore-map-upload");
+  if (mapPreview) {
+    mapPreview.src = "";
+    mapPreview.classList.add("hidden");
+  }
+  if (mapPlaceholder) mapPlaceholder.style.display = "block";
+  if (mapInput) mapInput.value = "";
+  document.getElementById("explore-map-error")?.classList.remove("show");
   document.querySelectorAll("#explore-percent-grid .percent-item").forEach((b) => b.classList.remove("selected"));
   renderExploreAreaCountButtons();
   resetExploreQr();
@@ -1404,7 +1432,7 @@ function updateAbyssSubmitState() {
 }
 function updateExploreSubmitState() {
   if (btnSubmitExplore) {
-    btnSubmitExplore.disabled = !(selectedExplore && selectedExploreAreaCount && selectedExplorePercent && hasExploreSlip);
+    btnSubmitExplore.disabled = !(selectedExplore && selectedExploreAreaCount && selectedExplorePercent && hasExploreMap && hasExploreSlip);
   }
 }
 
@@ -1435,6 +1463,15 @@ bindImageUpload({
   previewId: "explore-slip-preview",
   errorId: "explore-slip-error",
   onChange: (ok, file) => { selectedExploreSlipFile = file || null; hasExploreSlip = ok; updateExploreSubmitState(); }
+});
+
+bindImageUpload({
+  inputId: "explore-map-upload",
+  areaId: "explore-map-area",
+  placeholderId: "explore-map-placeholder",
+  previewId: "explore-map-preview",
+  errorId: "explore-map-error",
+  onChange: (ok, file) => { selectedExploreMapFile = file || null; hasExploreMap = ok; updateExploreSubmitState(); }
 });
 
 abyssForm?.addEventListener("submit", async (e) => {
@@ -1473,6 +1510,7 @@ exploreForm?.addEventListener("submit", async (e) => {
   if (!selectedExplore) { alert("กรุณาเลือกเมือง"); return; }
   if (!selectedExploreAreaCount) { alert("กรุณาเลือกจำนวนพื้นที่"); return; }
   if (!selectedExplorePercent) { alert("กรุณาเลือกเปอร์เซ็นต์ที่จะสำรวจ"); return; }
+  if (!hasExploreMap || !selectedExploreMapFile) { document.getElementById("explore-map-error")?.classList.add("show"); return; }
   if (!hasExploreSlip || !selectedExploreSlipFile) { document.getElementById("explore-slip-error")?.classList.add("show"); return; }
   const account = readGameAccount("explore");
   const accountError = validateGameAccount(account);
@@ -1495,7 +1533,10 @@ exploreForm?.addEventListener("submit", async (e) => {
   };
   btnSubmitExplore.disabled = true;
   try {
-    const saved = await saveOrder({ service: "explore", gameUsername: account.name, gameUid: account.uid, details }, { slipFile: selectedExploreSlipFile });
+    const saved = await saveOrder(
+      { service: "explore", gameUsername: account.name, gameUid: account.uid, details },
+      { slipFile: selectedExploreSlipFile, attachmentFile: selectedExploreMapFile, attachmentPurpose: "map_screenshot" }
+    );
     alert(`✅ ส่งคำสั่งซื้อสำรวจแผนที่สำเร็จ!\n\nรหัสออเดอร์: ${saved.order.orderNumber}\nเมือง: ${details.package}\nพื้นที่: ${details.areaCount}/${details.areaMax} · ${details.percent}%\nยอด: ${saved.order.totalPrice ?? "-"} ฿\n\nระบบบันทึกข้อมูลแล้ว กรุณาติดต่อ Facebook: Do Zo Genshin`);
   } catch (error) {
     await handleOrderError(error);
@@ -1600,7 +1641,7 @@ async function renderAdminOrders() {
 
   tbody.innerHTML = filtered.map(o => {
     const st = o.status || "pending";
-    const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
+    const files = orderFilesHtml(o);
     const assignedLabel = o.assignedStaffName
       ? `<div class="assign-current">${escapeHtml(o.assignedStaffName)}</div>`
       : `<div class="assign-current muted">ยังไม่มอบหมาย</div>`;
@@ -1683,7 +1724,7 @@ async function renderStaffJobs() {
 
   list.innerHTML = orders.map(o => {
     const st = o.status || "pending";
-    const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
+    const files = orderFilesHtml(o);
     return `<article class="staff-job-card glass status-border-${escapeHtml(st)}">
       <div class="staff-job-head">
         <div>
@@ -1734,7 +1775,7 @@ async function renderCustomerHistory() {
     }
     container.innerHTML = orders.map(o => {
       const status = STATUS_LABEL[o.status] || o.status || "รอดำเนินการ";
-      const files = [privateFileLink(o.slipPath, "ดูสลิป"), privateFileLink(o.attachmentPath, "ดูภาพวัสดุ")].filter(Boolean).join(" · ");
+      const files = orderFilesHtml(o);
       return `<article class="history-card glass">
         <div class="history-card-head">
           <h3>${escapeHtml(SERVICE_LABEL[o.service] || o.service)} <span class="order-number">#${escapeHtml(o.orderNumber)}</span></h3>

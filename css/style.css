@@ -1206,12 +1206,14 @@ html, body {
 #mat-shot-error,
 #mat-slip-error,
 #abyss-slip-error,
-#explore-slip-error { display: none; }
+#explore-slip-error,
+#explore-map-error { display: none; }
 #slip-error.show,
 #mat-shot-error.show,
 #mat-slip-error.show,
 #abyss-slip-error.show,
-#explore-slip-error.show { display: block; }
+#explore-slip-error.show,
+#explore-map-error.show { display: block; }
 
 .note-list {
   padding-left: 1.25rem;

@@ -30,7 +30,7 @@ async function handler(request) {
       if (!file || typeof file.arrayBuffer !== "function") {
         return json({ error: "ไม่พบไฟล์ที่อัปโหลด" }, 400);
       }
-      if (!new Set(["slip", "material_screenshot"]).has(purpose)) {
+      if (!new Set(["slip", "material_screenshot", "map_screenshot"]).has(purpose)) {
         return json({ error: "ประเภทไฟล์ไม่ถูกต้อง" }, 400);
       }
       if (!ALLOWED_TYPES.has(file.type)) {
