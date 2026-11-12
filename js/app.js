@@ -200,16 +200,21 @@ const AUTH_METHOD_LABEL = {
   facebook: "Facebook",
 };
 
-function detailRow(label, value, { mono = false, secret = false } = {}) {
+function detailRow(label, value, { mono = false, secret = false, copy = false } = {}) {
   if (value == null || value === "") return "";
   const text = String(value);
   const cls = [
     mono ? "detail-mono" : "",
     secret ? "detail-secret" : "",
+    copy ? "detail-copyable" : "",
   ].filter(Boolean).join(" ");
+  const copyAttr = copy
+    ? ` data-copy="${escapeHtml(text)}" title="คลิกเพื่อคัดลอก" role="button" tabindex="0"`
+    : "";
+  const copyHint = copy ? `<span class="detail-copy-hint" aria-hidden="true">คัดลอก</span>` : "";
   return `<div class="detail-row">
     <span class="detail-label">${escapeHtml(label)}</span>
-    <span class="detail-value${cls ? ` ${cls}` : ""}">${escapeHtml(text)}</span>
+    <span class="detail-value${cls ? ` ${cls}` : ""}"${copyAttr}>${escapeHtml(text)}${copyHint}</span>
   </div>`;
 }
 
@@ -222,12 +227,12 @@ function formatOrderDetailsHtml(o) {
   // บัญชีเกม / ล็อกอิน — ข้อมูลสำคัญที่ต้องใช้ทำงาน
   const accountBlock = [
     detailRow("ชื่อในเกม", d.gameName || o.gameUsername),
-    detailRow("UID", o.uid || d.uid),
+    detailRow("UID", o.uid || d.uid, { mono: true, copy: true }),
     detailRow("เซิร์ฟเวอร์", d.server),
     detailRow("AR", d.ar != null ? String(d.ar) : null),
     detailRow("วิธีสมัคร", AUTH_METHOD_LABEL[d.authMethod] || d.authMethod),
-    detailRow("ID ล็อกอิน", d.loginId, { mono: true }),
-    detailRow("รหัสผ่าน", d.gamePass, { mono: true, secret: true }),
+    detailRow("ID ล็อกอิน", d.loginId, { mono: true, copy: true }),
+    detailRow("รหัสผ่าน", d.gamePass, { mono: true, secret: true, copy: true }),
   ].filter(Boolean).join("");
 
   if (accountBlock) {
@@ -2643,6 +2648,54 @@ document.querySelectorAll(".admin-tab").forEach(tab => {
     const panel = document.getElementById("admin-panel-" + tab.dataset.adminTab);
     if (panel) panel.classList.add("active");
   });
+});
+
+
+// คลิกค่าที่คัดลอกได้ (ID ล็อกอิน / รหัสผ่าน / UID)
+async function copyDetailValue(el) {
+  const value = el?.getAttribute("data-copy") || "";
+  if (!value) return;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    el.classList.add("is-copied");
+    const hint = el.querySelector(".detail-copy-hint");
+    const prev = hint?.textContent;
+    if (hint) hint.textContent = "คัดลอกแล้ว";
+    clearTimeout(el._copyTimer);
+    el._copyTimer = setTimeout(() => {
+      el.classList.remove("is-copied");
+      if (hint && prev) hint.textContent = prev;
+    }, 1200);
+  } catch (error) {
+    console.error("copy failed", error);
+    alert("คัดลอกไม่สำเร็จ — ลองเลือกข้อความเอง");
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest?.(".detail-copyable");
+  if (!el) return;
+  e.preventDefault();
+  copyDetailValue(el);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const el = e.target.closest?.(".detail-copyable");
+  if (!el) return;
+  e.preventDefault();
+  copyDetailValue(el);
 });
 
 document.getElementById("btn-refresh-orders")?.addEventListener("click", async () => {
