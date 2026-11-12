@@ -1,3 +1,9 @@
+-- =============================================================================
+-- Dozo Genshin / Dozo2 — Schema ล่าสุด (alias ของ neon_schema.sql)
+-- รันครั้งเดียวใน Neon Console → SQL Editor สำหรับฐานใหม่
+-- ฐานเดิมใช้ migrate_all.sql
+-- =============================================================================
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -11,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   staff_description TEXT,
   membership_slip_path TEXT,
   member_since TIMESTAMPTZ,
+  discord_user_id TEXT UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -18,12 +25,20 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number BIGINT GENERATED ALWAYS AS IDENTITY UNIQUE,
-  customer_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  customer_id UUID REFERENCES users(id) ON DELETE RESTRICT,
   service TEXT NOT NULL
-    CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore', 'oculus')),
+    CHECK (service IN (
+      'farm-gem',
+      'material',
+      'build-char',
+      'abyss',
+      'explore',
+      'oculus'
+    )),
   summary TEXT NOT NULL,
   game_username TEXT NOT NULL,
   game_uid TEXT NOT NULL,
+  facebook_name TEXT,
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'doing', 'done', 'cancel')),
   total_price NUMERIC(10,2),
@@ -47,3 +62,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_service_created
 
 CREATE INDEX IF NOT EXISTS idx_orders_assigned_staff_created
   ON orders (assigned_staff_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_orders_facebook_name
+  ON orders (facebook_name)
+  WHERE facebook_name IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_users_discord_user_id
+  ON users (discord_user_id)
+  WHERE discord_user_id IS NOT NULL;

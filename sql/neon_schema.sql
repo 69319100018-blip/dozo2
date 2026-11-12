@@ -1,5 +1,8 @@
--- Dozo Genshin / Dozo2
--- Run this script once in Neon Console -> SQL Editor.
+-- =============================================================================
+-- Dozo Genshin / Dozo2 — Schema ล่าสุด (ฐานข้อมูลใหม่)
+-- รันครั้งเดียวใน Neon Console → SQL Editor
+-- ถ้ามีฐานเดิมอยู่แล้ว ให้ใช้ migrate_all.sql แทน
+-- =============================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -14,6 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
   staff_description TEXT,
   membership_slip_path TEXT,
   member_since TIMESTAMPTZ,
+  -- Discord User ID สำหรับคำสั่ง /รับงาน (ลูกทีม / แอดมิน)
+  discord_user_id TEXT UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -21,10 +26,17 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number BIGINT GENERATED ALWAYS AS IDENTITY UNIQUE,
-  -- nullable = ออเดอร์จากผู้ใช้ที่ไม่ล็อกอิน (anonymous)
+  -- null = ออเดอร์จากผู้ใช้ที่ไม่ล็อกอิน
   customer_id UUID REFERENCES users(id) ON DELETE RESTRICT,
   service TEXT NOT NULL
-    CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore', 'oculus')),
+    CHECK (service IN (
+      'farm-gem',
+      'material',
+      'build-char',
+      'abyss',
+      'explore',
+      'oculus'
+    )),
   summary TEXT NOT NULL,
   game_username TEXT NOT NULL,
   game_uid TEXT NOT NULL,
@@ -54,6 +66,17 @@ CREATE INDEX IF NOT EXISTS idx_orders_service_created
 CREATE INDEX IF NOT EXISTS idx_orders_assigned_staff_created
   ON orders (assigned_staff_id, created_at DESC);
 
--- After a customer has registered through the website, promote that account
--- to admin by replacing the email below with the exact registered email.
+CREATE INDEX IF NOT EXISTS idx_orders_facebook_name
+  ON orders (facebook_name)
+  WHERE facebook_name IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_users_discord_user_id
+  ON users (discord_user_id)
+  WHERE discord_user_id IS NOT NULL;
+
+-- ตั้งแอดมินหลังสมัครผ่านเว็บแล้ว:
 -- UPDATE users SET role = 'admin' WHERE email = lower('your-email@example.com');
+--
+-- ผูก Discord สำหรับ /รับงาน:
+-- UPDATE users SET discord_user_id = 'DISCORD_USER_ID'
+-- WHERE email = lower('staff@example.com') AND role IN ('staff', 'admin');

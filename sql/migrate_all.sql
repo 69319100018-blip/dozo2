@@ -1,16 +1,16 @@
 -- =============================================================================
--- Dozo Genshin — รวม migration ทั้งหมด (รันครั้งเดียวใน Neon SQL Editor)
--- ใช้กับฐานข้อมูลที่มีตาราง users / orders อยู่แล้ว
+-- Dozo Genshin / Dozo2 — รวม migration ทั้งหมด (ฐานข้อมูลที่มีอยู่แล้ว)
+-- รันครั้งเดียวใน Neon Console → SQL Editor
 -- รันซ้ำได้ (idempotent) — ไม่ลบข้อมูลเดิม
 --
 -- ครอบคลุม:
 --   • role: customer / member / staff / admin
 --   • คอลัมน์สมาชิก (membership_slip_path, member_since)
 --   • คอลัมน์ลูกทีม (staff_title, staff_description)
+--   • Discord staff claim (discord_user_id)
 --   • ออเดอร์ไม่ล็อกอิน (customer_id nullable + facebook_name)
 --   • มอบหมายงานให้ลูกทีม (assigned_staff_id)
 --   • บริการ: farm-gem, material, build-char, abyss, explore, oculus
---   • Discord staff claim (discord_user_id)
 -- =============================================================================
 
 BEGIN;
@@ -30,6 +30,25 @@ ALTER TABLE users
   ADD COLUMN IF NOT EXISTS membership_slip_path TEXT,
   ADD COLUMN IF NOT EXISTS member_since TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'users_discord_user_id_key'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_discord_user_id_key UNIQUE (discord_user_id);
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN unique_violation THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_users_discord_user_id
+  ON users (discord_user_id)
+  WHERE discord_user_id IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- 2) orders: ออเดอร์ไม่ล็อกอิน + ชื่อเฟส
@@ -55,7 +74,6 @@ CREATE INDEX IF NOT EXISTS idx_orders_assigned_staff_created
 
 -- ---------------------------------------------------------------------------
 -- 4) orders: รายการบริการที่อนุญาต (รวม oculus)
---    ดรอปชื่อ constraint เก่าทุกแบบ แล้วสร้างใหม่ชื่อเดียว
 -- ---------------------------------------------------------------------------
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_service_check;
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_service_allowed_check;
@@ -73,5 +91,20 @@ ALTER TABLE orders
 
 COMMIT;
 
--- เสร็จแล้ว — ลองสั่งบริการ Oculus บนเว็บได้อีกครั้ง
--- (ถ้าต้องการตั้งแอดมิน: UPDATE users SET role = 'admin' WHERE email = lower('your@email.com');)
+-- -----------------------------------------------------------------------------
+-- คำสั่งเสริม (รันแยกตามต้องการ)
+-- -----------------------------------------------------------------------------
+-- ตั้งแอดมิน:
+-- UPDATE users SET role = 'admin' WHERE email = lower('your@email.com');
+--
+-- ผูก Discord สำหรับ /รับงาน:
+-- UPDATE users
+-- SET discord_user_id = '123456789012345678'
+-- WHERE email = lower('staff@example.com')
+--   AND role IN ('staff', 'admin');
+--
+-- ตรวจโครงสร้าง:
+-- SELECT column_name, data_type, is_nullable
+-- FROM information_schema.columns
+-- WHERE table_name IN ('users', 'orders')
+-- ORDER BY table_name, ordinal_position;
