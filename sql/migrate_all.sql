@@ -10,12 +10,13 @@
 --   • ออเดอร์ไม่ล็อกอิน (customer_id nullable + facebook_name)
 --   • มอบหมายงานให้ลูกทีม (assigned_staff_id)
 --   • บริการ: farm-gem, material, build-char, abyss, explore, oculus
+--   • Discord staff claim (discord_user_id)
 -- =============================================================================
 
 BEGIN;
 
 -- ---------------------------------------------------------------------------
--- 1) users: บทบาท + คอลัมน์สมาชิก / ลูกทีม
+-- 1) users: บทบาท + คอลัมน์สมาชิก / ลูกทีม / Discord
 -- ---------------------------------------------------------------------------
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 
@@ -27,7 +28,8 @@ ALTER TABLE users
   ADD COLUMN IF NOT EXISTS staff_title TEXT,
   ADD COLUMN IF NOT EXISTS staff_description TEXT,
   ADD COLUMN IF NOT EXISTS membership_slip_path TEXT,
-  ADD COLUMN IF NOT EXISTS member_since TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS member_since TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
 
 -- ---------------------------------------------------------------------------
 -- 2) orders: ออเดอร์ไม่ล็อกอิน + ชื่อเฟส
