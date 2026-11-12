@@ -153,6 +153,12 @@
             <p>เปิดแผนที่ 100% + เก็บของหายาก</p>
             <button class="btn-service">เลือกบริการ</button>
           </div>
+          <div class="service-card glass" data-service="oculus">
+            <div class="card-icon">🔮</div>
+            <h3>เก็บ Oculus / อัปเสา</h3>
+            <p>เก็บลูกแก้วอัพเสาเมืองทุกชนิด ตามจำนวนที่เหลือ</p>
+            <button class="btn-service">เลือกบริการ</button>
+          </div>
           <div class="service-card glass service-card-disabled" data-service="id-care" aria-disabled="true">
             <div class="coming-soon-badge">เร็ว ๆ นี้</div>
             <div class="card-icon">🛡️</div>
@@ -978,6 +984,158 @@
 
           <div class="form-actions">
             <button type="submit" class="btn-primary btn-submit" id="btn-submit-explore" disabled>
+              สั่งซื้อบริการ
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ===== ORDER OCULUS VIEW ===== -->
+      <div id="view-order-oculus" class="view">
+        <div class="order-header">
+          <button class="btn-back" id="btn-back-home-oculus" type="button">← กลับหน้าหลัก</button>
+          <h2>เก็บ Oculus / อัปเสาเมือง</h2>
+        </div>
+
+        <form id="oculus-form" class="order-form">
+          <section class="form-section glass">
+            <h3 class="section-title">1. เลือกชนิด Oculus / รายการ</h3>
+            <p class="hint">ติ๊กชนิดที่ต้องการ แล้วใส่จำนวนที่ยังเก็บไม่ครบ — ระบบหักลบราคาตามจำนวนที่เหลือ</p>
+            <div class="oculus-grid" id="oculus-type-grid"></div>
+            <div class="price-summary" style="margin-top:1rem">
+              <span>ยอดที่ต้องชำระ:</span>
+              <strong id="oculus-total-price">0 ฿</strong>
+            </div>
+            <p class="hint" id="oculus-price-breakdown">ยังไม่ได้เลือกชนิด</p>
+          </section>
+
+          <section class="form-section glass">
+            <div class="section-title-row">
+              <h3 class="section-title">2. ข้อมูลบัญชีเกม</h3>
+              <div class="auth-method-tabs" data-auth-prefix="oculus" role="tablist" aria-label="วิธีสมัครไอดี">
+                <button type="button" class="auth-method-btn active" data-auth-method="hoyoverse" title="Hoyoverse" aria-label="Hoyoverse">
+                  <span class="auth-icon auth-icon-hoyoverse">H</span>
+                </button>
+                <button type="button" class="auth-method-btn" data-auth-method="google" title="Google" aria-label="Google">
+                  <span class="auth-icon auth-icon-google">G</span>
+                </button>
+                <button type="button" class="auth-method-btn" data-auth-method="apple" title="Apple" aria-label="Apple">
+                  <span class="auth-icon auth-icon-apple">⌘</span>
+                </button>
+                <button type="button" class="auth-method-btn" data-auth-method="facebook" title="Facebook" aria-label="Facebook">
+                  <span class="auth-icon auth-icon-facebook">f</span>
+                </button>
+              </div>
+            </div>
+            <p class="auth-method-hint" id="oculus-auth-method-hint">สมัครด้วย Hoyoverse — กรอกอีเมล/ยูสเซอร์และรหัสผ่านบัญชีเกม</p>
+            <input type="hidden" id="oculus-auth-method" value="hoyoverse" />
+            <div class="auth-fields-panel is-active" id="oculus-auth-fields">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="oculus-game-name">1. ชื่อในเกม</label>
+                  <input type="text" id="oculus-game-name" placeholder="ชื่อตัวละคร / ชื่อในเกม" required />
+                </div>
+                <div class="form-group">
+                  <label for="oculus-game-uid">2. UID</label>
+                  <input type="text" id="oculus-game-uid" placeholder="เช่น 812345678" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="oculus-game-server">3. เซิร์ฟเวอร์</label>
+                  <select id="oculus-game-server" required>
+                    <option value="">เลือกเซิร์ฟเวอร์</option>
+                    <option value="Asia">Asia</option>
+                    <option value="America">America</option>
+                    <option value="Europe">Europe</option>
+                    <option value="TW/HK/MO">TW/HK/MO</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="oculus-game-login-id" id="oculus-login-id-label">4. ID (ล็อกอิน)</label>
+                  <input type="text" id="oculus-game-login-id" placeholder="อีเมล / ยูสเซอร์ล็อกอิน" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="oculus-game-pass" id="oculus-pass-label">5. Pass</label>
+                  <input type="text" id="oculus-game-pass" placeholder="รหัสผ่านบัญชีเกม" required autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="oculus-game-ar">6. AR</label>
+                  <input type="number" id="oculus-game-ar" placeholder="เช่น 55" min="1" max="60" required />
+                </div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label for="oculus-facebook-name">ชื่อเฟส (Facebook) <span class="required">*จำเป็น</span></label>
+              <input type="text" id="oculus-facebook-name" placeholder="ชื่อเฟสที่ใช้ติดต่อร้าน" maxlength="80" required />
+            </div>
+            <p class="hint warn">ข้อมูลบัญชีใช้เพื่อเข้าทำงานเท่านั้น — หลังจบงานแนะนำเปลี่ยนรหัสผ่าน</p>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">3. สิ่งที่ร้านต้องทราบ</h3>
+            <div class="option-check-grid">
+              <label class="option-check-card">
+                <input type="checkbox" id="oculus-no-compass" value="1" />
+                <span class="option-check-body">
+                  <strong>ไม่มีเข็มทิศประจำเมือง</strong>
+                  <small>บวก <b>+20 ฿</b></small>
+                </span>
+              </label>
+              <label class="option-check-card">
+                <input type="checkbox" id="oculus-no-markers" value="1" />
+                <span class="option-check-body">
+                  <strong>ไม่ได้ทำสัญลักษณ์ Oculus ไว้</strong>
+                  <small>บวก <b>+20 ฿</b></small>
+                </span>
+              </label>
+            </div>
+            <div class="form-group" style="margin-top:1rem">
+              <label for="oculus-note">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
+              <textarea id="oculus-note" rows="2" placeholder="เช่น เน้นเมืองนี้ก่อน, มีแผนที่ค้นหาแล้ว ฯลฯ"></textarea>
+            </div>
+          </section>
+
+          <section class="form-section glass">
+            <h3 class="section-title">4. ชำระเงิน &amp; อัปโหลดสลิป</h3>
+            <p class="hint">เลือกชนิด + จำนวนที่เหลือ แล้วกดสร้าง QR ตามยอด จากนั้นอัปโหลดสลิป</p>
+            <div class="qr-generate-row">
+              <button type="button" class="btn-generate-qr" id="btn-generate-oculus-qr" disabled>
+                สร้าง QR ตามยอดชำระ
+              </button>
+              <span class="qr-generate-hint" id="oculus-qr-hint">เลือกชนิดและจำนวนก่อน</span>
+            </div>
+            <div class="qr-box qr-box-pending" data-qr="dynamic" id="oculus-qr-box">
+              <p class="qr-note">ยังไม่ได้สร้าง QR</p>
+            </div>
+            <p class="qr-amount-line" id="oculus-qr-amount-line"></p>
+            <div class="form-group">
+              <label>อัปโหลดสลิปโอนเงิน <span class="required">*จำเป็น</span></label>
+              <div class="upload-area" id="oculus-slip-area">
+                <input type="file" id="oculus-slip-upload" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="upload-placeholder" id="oculus-slip-placeholder">
+                  <span>📎 คลิกหรือลากไฟล์สลิปมาวางที่นี่</span>
+                  <small>รองรับ JPG, PNG, WEBP ≤ 3 MB</small>
+                </div>
+                <img id="oculus-slip-preview" class="slip-preview hidden" alt="ตัวอย่างสลิป" />
+              </div>
+              <p class="hint warn" id="oculus-slip-error">ต้องอัปโหลดสลิปก่อนจึงจะกดสั่งซื้อได้</p>
+            </div>
+          </section>
+
+          <section class="form-section note-section glass">
+            <h3 class="section-title">📌 หมายเหตุสำคัญ</h3>
+            <ul class="note-list">
+              <li>ราคาคิดจาก <strong>จำนวนที่เหลือยังเก็บไม่ครบ</strong> × ราคาต่อชิ้น</li>
+              <li>ยกเลิกงานกลางคัน <strong>ไม่มีการคืนเงิน</strong></li>
+              <li>หลังกดสั่งซื้อ กรุณาแคปคิว แล้วส่งมาทาง Facebook: <strong>Do Zo Genshin</strong></li>
+            </ul>
+          </section>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary btn-submit" id="btn-submit-oculus" disabled>
               สั่งซื้อบริการ
             </button>
           </div>

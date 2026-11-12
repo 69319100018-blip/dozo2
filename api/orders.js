@@ -23,8 +23,27 @@ const FARM_PRICES_MEMBER = new Map([
   [9600, 541], [11200, 660], [12800, 745], [14400, 850], [16000, 1035],
 ]);
 
-const ALLOWED_SERVICES = new Set(["farm-gem", "material", "build-char", "abyss", "explore"]);
+const ALLOWED_SERVICES = new Set(["farm-gem", "material", "build-char", "abyss", "explore", "oculus"]);
 const ALLOWED_STATUSES = new Set(["pending", "doing", "done", "cancel"]);
+
+// ราคาต่อชิ้น (หรือต่อเลเวลสำหรับอุตริมณฑล)
+const OCULUS_UNIT_PRICES = new Map([
+  ["anemoculus", 1],
+  ["geoculus", 1.5],
+  ["electroculus", 2.5],
+  ["dendroculus", 2.5],
+  ["hydroculus", 3],
+  ["pyroculus", 3],
+  ["lunarculus", 3],
+  ["cryoculus", 2.5],
+  ["crimson-agate", 1.5],
+  ["lumenstone", 1.5],
+  ["spirit-carp", 1.5],
+  ["sacred-seal", 1],
+  ["plume", 2],
+  ["mnemonic-cluster", 2],
+  ["utsava", 35],
+]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isMemberRole(role) {
@@ -214,6 +233,52 @@ function buildDetails(service, raw, userRole = "customer") {
       },
       totalPrice: total,
       summary: `${label} ${areaCount}/${maxAreas} พื้นที่ · ${percent}% · ${total}฿`,
+    };
+  }
+
+  if (service === "oculus") {
+    const itemsRaw = Array.isArray(d.items) ? d.items : [];
+    const items = [];
+    let subtotal = 0;
+    for (const row of itemsRaw) {
+      const id = cleanText(row?.id, 40).toLowerCase();
+      const label = cleanText(row?.label, 80) || id;
+      const remaining = Number(row?.remaining);
+      const unit = OCULUS_UNIT_PRICES.get(id);
+      if (unit == null) continue;
+      if (!Number.isFinite(remaining) || remaining <= 0) continue;
+      const qty = Math.min(9999, Math.floor(remaining));
+      const lineTotal = Math.round(qty * unit * 100) / 100;
+      subtotal += lineTotal;
+      items.push({ id, label, remaining: qty, unitPrice: unit, lineTotal });
+    }
+    if (!items.length) throw new Error("กรุณาเลือกชนิด Oculus และจำนวนที่เหลืออย่างน้อย 1 รายการ");
+
+    const noCompass = d.noCompass === true;
+    const noMarkers = d.noMarkers === true;
+    let extra = 0;
+    if (noCompass) extra += 20;
+    if (noMarkers) extra += 20;
+    const total = Math.round((subtotal + extra) * 100) / 100;
+    const note = cleanText(d.note, 1500);
+    const names = items.map((it) => `${it.label}×${it.remaining}`).join(", ");
+    const extraBits = [];
+    if (noCompass) extraBits.push("ไม่มีเข็มทิศ +20");
+    if (noMarkers) extraBits.push("ไม่มีมาร์ก +20");
+
+    return {
+      details: {
+        ...details,
+        ...accountFields,
+        items,
+        noCompass,
+        noMarkers,
+        note: note || null,
+        subtotal,
+        extraFees: extra,
+      },
+      totalPrice: total,
+      summary: `Oculus · ${names}${extraBits.length ? ` · ${extraBits.join(" · ")}` : ""} · ${total}฿`,
     };
   }
 
