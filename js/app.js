@@ -193,6 +193,149 @@ function orderFilesHtml(o) {
   ].filter(Boolean).join(" · ");
 }
 
+const AUTH_METHOD_LABEL = {
+  hoyoverse: "Hoyoverse",
+  google: "Google",
+  apple: "Apple",
+  facebook: "Facebook",
+};
+
+function detailRow(label, value, { mono = false, secret = false } = {}) {
+  if (value == null || value === "") return "";
+  const text = String(value);
+  const cls = [
+    mono ? "detail-mono" : "",
+    secret ? "detail-secret" : "",
+  ].filter(Boolean).join(" ");
+  return `<div class="detail-row">
+    <span class="detail-label">${escapeHtml(label)}</span>
+    <span class="detail-value${cls ? ` ${cls}` : ""}">${escapeHtml(text)}</span>
+  </div>`;
+}
+
+/** แสดงรายละเอียดที่ลูกค้ากรอกทั้งหมด (สำหรับแอดมิน / ลูกทีม) */
+function formatOrderDetailsHtml(o) {
+  const d = o?.details && typeof o.details === "object" ? o.details : {};
+  const service = o?.service || "";
+  const parts = [];
+
+  // บัญชีเกม / ล็อกอิน — ข้อมูลสำคัญที่ต้องใช้ทำงาน
+  const accountBlock = [
+    detailRow("ชื่อในเกม", d.gameName || o.gameUsername),
+    detailRow("UID", o.uid || d.uid),
+    detailRow("เซิร์ฟเวอร์", d.server),
+    detailRow("AR", d.ar != null ? String(d.ar) : null),
+    detailRow("วิธีสมัคร", AUTH_METHOD_LABEL[d.authMethod] || d.authMethod),
+    detailRow("ID ล็อกอิน", d.loginId, { mono: true }),
+    detailRow("รหัสผ่าน", d.gamePass, { mono: true, secret: true }),
+  ].filter(Boolean).join("");
+
+  if (accountBlock) {
+    parts.push(`<div class="detail-section"><div class="detail-section-title">บัญชีเกม</div>${accountBlock}</div>`);
+  }
+
+  // ตามประเภทบริการ
+  if (service === "farm-gem") {
+    const farmRows = [
+      detailRow("จำนวนเจม", d.gems != null ? `${Number(d.gems).toLocaleString("en-US")} เจม` : null),
+      detailRow("งานเร่ง", d.rush === true ? "ใช่ (+30%)" : d.rush === false ? "ไม่" : null),
+      detailRow("ไม่นับเจมประจำวัน", d.noDailyGems ? "ใช่ (+20฿)" : null),
+      detailRow("ไม่นับอบิส/โรงละคร", d.noAbyssTheaterGems ? "ใช่ (+50฿)" : null),
+      detailRow("ตีมอน", d.combat === "cannot" ? "ตีมอนไม่ไหว (+50฿)" : d.combat === "can" ? "ตีมอนได้" : null),
+      detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+      detailRow("ข้อห้าม", d.prohibitions),
+      detailRow("ค่าบริการเพิ่ม", d.extraFees ? `${d.extraFees}฿` : null),
+      detailRow("ราคาสมาชิก", d.memberPrice ? "ใช่" : null),
+    ].filter(Boolean).join("");
+    if (farmRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียดฟาร์มเจม</div>${farmRows}</div>`);
+  } else if (service === "material") {
+    const matRows = [
+      detailRow("ประเภทวัสดุ", d.materialType || d.package),
+      detailRow("ใช้กับ", d.forCharacter || d.character),
+      detailRow("รายละเอียดที่ต้องการ", d.note),
+      detailRow("ข้อห้าม", d.prohibitions),
+      detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+    ].filter(Boolean).join("");
+    if (matRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียดหาวัสดุ</div>${matRows}</div>`);
+  } else if (service === "build-char") {
+    const levelPart = [d.levelFrom, d.levelTo].filter(Boolean).join(" → ");
+    const buildRows = [
+      detailRow("ตัวละคร", d.character),
+      detailRow("เป้าหมาย", d.goal || d.package),
+      detailRow("เลเวล", levelPart || null),
+      detailRow("Talent", d.talent),
+      detailRow("หมายเหตุ", d.note || d.detail),
+      detailRow("ข้อห้าม", d.prohibitions),
+      detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+    ].filter(Boolean).join("");
+    if (buildRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียดปั้นตัวละคร</div>${buildRows}</div>`);
+  } else if (service === "abyss") {
+    const abyssRows = [
+      detailRow("เป้าหมาย", d.package || d.packageId),
+      detailRow("รายละเอียดเพิ่ม", d.detail || d.note),
+      detailRow("ข้อห้าม", d.prohibitions),
+      detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+    ].filter(Boolean).join("");
+    if (abyssRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียด Abyss</div>${abyssRows}</div>`);
+  } else if (service === "explore") {
+    const exploreRows = [
+      detailRow("เมือง", d.package),
+      detailRow("จำนวนพื้นที่", d.areaCount != null && d.areaMax != null ? `${d.areaCount}/${d.areaMax}` : d.areaCount),
+      detailRow("เปอร์เซ็นต์", d.percent != null ? `${d.percent}%` : null),
+      detailRow("รายละเอียดเพิ่ม", d.detail || d.note),
+      detailRow("ข้อห้าม", d.prohibitions),
+      detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+    ].filter(Boolean).join("");
+    if (exploreRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียดสำรวจแผนที่</div>${exploreRows}</div>`);
+  } else if (service === "oculus") {
+    let itemsText = null;
+    if (Array.isArray(d.items) && d.items.length) {
+      itemsText = d.items
+        .map((it) => `${it.label || it.type || "Oculus"} × ${it.remaining ?? it.count ?? "?"}`)
+        .join(", ");
+    }
+    const oculusRows = [
+      detailRow("รายการ", itemsText),
+      detailRow("ไม่มีเข็มทิศ", d.noCompass ? "ใช่ (+20฿)" : null),
+      detailRow("ไม่ได้ทำสัญลักษณ์", d.noMarkers ? "ใช่ (+20฿)" : null),
+      detailRow("หมายเหตุ", d.note || d.detail),
+      detailRow("ข้อห้าม", d.prohibitions),
+    ].filter(Boolean).join("");
+    if (oculusRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียด Oculus</div>${oculusRows}</div>`);
+  } else {
+    // fallback: แสดง key ที่รู้จัก
+    const generic = [
+      detailRow("แพ็กเกจ", d.package),
+      detailRow("รายละเอียด", d.detail || d.note),
+      detailRow("ข้อห้าม", d.prohibitions),
+      detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+    ].filter(Boolean).join("");
+    if (generic) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียด</div>${generic}</div>`);
+  }
+
+  // ลูกค้า / ชำระเงิน
+  const customerBlock = [
+    detailRow("ชื่อเฟส", o.facebookName),
+    detailRow("อีเมลสมาชิก", o.customerEmail),
+    detailRow("ชื่อแสดง", o.customerDisplayName),
+    detailRow("ยอดชำระ", o.totalPrice != null ? `${o.totalPrice}฿` : null),
+    detailRow("รหัสออเดอร์", o.orderNumber != null ? `#${o.orderNumber}` : null),
+  ].filter(Boolean).join("");
+  if (customerBlock) {
+    parts.push(`<div class="detail-section"><div class="detail-section-title">ลูกค้า & ชำระเงิน</div>${customerBlock}</div>`);
+  }
+
+  const files = orderFilesHtml(o);
+  if (files) {
+    parts.push(`<div class="detail-section"><div class="detail-section-title">ไฟล์แนบ</div><div class="detail-files">${files}</div></div>`);
+  }
+
+  if (!parts.length) {
+    return `<div class="detail-empty">ไม่มีรายละเอียดเพิ่มเติม</div>`;
+  }
+  return `<div class="order-details-panel">${parts.join("")}</div>`;
+}
+
 async function handleOrderError(error) {
   console.error(error);
   alert(error?.message || "บันทึกคำสั่งซื้อไม่สำเร็จ กรุณาลองใหม่");
@@ -1168,6 +1311,8 @@ materialForm?.addEventListener("submit", async (e) => {
   const userVal = document.getElementById("mat-user")?.value.trim();
   const uidVal = document.getElementById("mat-id")?.value.trim();
   if (!userVal || !uidVal) { alert("กรุณากรอก Username และ UID ให้ครบ"); return; }
+  const facebookName = document.getElementById("mat-facebook-name")?.value.trim() || "";
+  if (!facebookName || facebookName.length < 2) { alert("กรุณากรอกชื่อเฟสเพื่อยืนยันตัวตน"); return; }
 
   const details = {
     materialType: selectedMaterialType.label,
@@ -1183,6 +1328,7 @@ materialForm?.addEventListener("submit", async (e) => {
       service: "material",
       gameUsername: userVal,
       gameUid: uidVal,
+      facebookName,
       details
     }, { slipFile: selectedMatSlipFile, attachmentFile: selectedMatScreenshotFile });
     goToQueueAfterOrder({
@@ -2094,10 +2240,17 @@ async function renderAdminOrders() {
     const assignedLabel = o.assignedStaffName
       ? `<div class="assign-current">${escapeHtml(o.assignedStaffName)}</div>`
       : `<div class="assign-current muted">ยังไม่มอบหมาย</div>`;
-    return `<tr class="${o.assignedStaffId ? "" : "row-unassigned"}">
+    const detailsHtml = formatOrderDetailsHtml(o);
+    return `<tr class="order-row ${o.assignedStaffId ? "" : "row-unassigned"}" data-order-row="${escapeHtml(o.id)}">
       <td>${escapeHtml(formatTime(o.createdAt))}</td>
       <td><span class="svc-chip">${escapeHtml(SERVICE_LABEL[o.service] || o.service)}</span></td>
-      <td class="cell-detail">${escapeHtml(o.summary || "-")}<br><small>${files}</small></td>
+      <td class="cell-detail">
+        <div class="detail-summary">${escapeHtml(o.summary || "-")}</div>
+        ${files ? `<small class="detail-file-links">${files}</small>` : ""}
+        <button type="button" class="btn-toggle-detail" data-toggle-detail="${escapeHtml(o.id)}" aria-expanded="false">
+          ดูรายละเอียดทั้งหมด
+        </button>
+      </td>
       <td>
         <div>${escapeHtml(o.facebookName || o.customerDisplayName || o.customerEmail || "ไม่ระบุ")}</div>
         <small class="muted">UID: ${escapeHtml(o.uid || "-")}</small>
@@ -2110,6 +2263,9 @@ async function renderAdminOrders() {
         <span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span>
         ${statusSelectHtml(o.id, st)}
       </td>
+    </tr>
+    <tr class="order-detail-row hidden" data-detail-for="${escapeHtml(o.id)}">
+      <td colspan="6">${detailsHtml}</td>
     </tr>`;
   }).join("");
 
@@ -2138,6 +2294,18 @@ async function renderAdminOrders() {
         alert(error.message || "มอบหมายงานไม่สำเร็จ");
         sel.disabled = false;
       }
+    });
+  });
+
+  tbody.querySelectorAll("button[data-toggle-detail]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.toggleDetail;
+      const detailRow = tbody.querySelector(`tr[data-detail-for="${id}"]`);
+      if (!detailRow) return;
+      const open = detailRow.classList.toggle("hidden") === false;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.textContent = open ? "ซ่อนรายละเอียด" : "ดูรายละเอียดทั้งหมด";
+      btn.classList.toggle("is-open", open);
     });
   });
 }
@@ -2174,6 +2342,7 @@ async function renderStaffJobs() {
   list.innerHTML = orders.map(o => {
     const st = o.status || "pending";
     const files = orderFilesHtml(o);
+    const detailsHtml = formatOrderDetailsHtml(o);
     return `<article class="staff-job-card glass status-border-${escapeHtml(st)}">
       <div class="staff-job-head">
         <div>
@@ -2191,6 +2360,10 @@ async function renderStaffJobs() {
         <span>${escapeHtml(formatTime(o.createdAt))}</span>
       </div>
       ${files ? `<div class="history-files">${files}</div>` : ""}
+      <details class="staff-order-details">
+        <summary>ดูรายละเอียดที่ลูกค้ากรอกทั้งหมด</summary>
+        ${detailsHtml}
+      </details>
       <div class="staff-job-actions">
         <label>อัปเดตสถานะ</label>
         ${statusSelectHtml(o.id, st, "staff-status")}
