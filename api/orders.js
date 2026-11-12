@@ -482,6 +482,7 @@ async function handler(request) {
           totalPrice: order.totalPrice,
           attachmentViewUrl,
           attachmentLabel,
+          attachmentPath,
         });
       } catch (notifyError) {
         console.error("[notify] notifyNewOrderAll failed", notifyError);
