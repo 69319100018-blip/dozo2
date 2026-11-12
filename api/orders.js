@@ -577,15 +577,40 @@ async function handler(request) {
 
     return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST, PATCH" });
   } catch (error) {
+    const msg = String(error?.message || "");
+    const validationMessages = new Set([
+      "แพ็กเกจเจมไม่ถูกต้อง",
+      "กรุณาเลือกตัวละคร",
+      "กรุณาเลือกประเภทวัสดุ",
+      "กรุณาระบุรายละเอียดวัสดุที่ต้องการ",
+      "กรุณาเลือกเป้าหมายการปั้น",
+      "กรุณาเลือกแพ็กเกจหรือเป้าหมาย",
+      "แพ็กเกจ Abyss ไม่ถูกต้อง",
+      "พื้นที่สำรวจไม่ถูกต้อง",
+      "เปอร์เซ็นต์สำรวจต้องเป็น 50 / 75 / 100",
+      "กรุณาเลือกชนิด Oculus และจำนวนที่เหลืออย่างน้อย 1 รายการ",
+    ]);
+    // ข้อความจำนวนพื้นที่แบบ dynamic
+    if (/^จำนวนพื้นที่ต้องอยู่ระหว่าง/.test(msg)) {
+      return json({ error: msg }, 400);
+    }
+    if (validationMessages.has(msg)) {
+      return json({ error: msg }, 400);
+    }
+    // Neon CHECK constraint — มักเกิดเมื่อยังไม่รัน migration เพิ่ม service ใหม่
     if (
-      error.message === "แพ็กเกจเจมไม่ถูกต้อง" ||
-      error.message === "กรุณาเลือกตัวละคร" ||
-      error.message === "กรุณาเลือกประเภทวัสดุ" ||
-      error.message === "กรุณาระบุรายละเอียดวัสดุที่ต้องการ" ||
-      error.message === "กรุณาเลือกเป้าหมายการปั้น" ||
-      error.message === "กรุณาเลือกแพ็กเกจหรือเป้าหมาย"
+      /orders_service/i.test(msg) ||
+      /violates check constraint/i.test(msg) ||
+      /check constraint/i.test(msg)
     ) {
-      return json({ error: error.message }, 400);
+      console.error("[orders] service constraint", error);
+      return json(
+        {
+          error:
+            "บริการนี้ยังไม่เปิดในฐานข้อมูล — ให้รัน sql/add_oculus_service.sql ใน Neon แล้วลองใหม่",
+        },
+        500
+      );
     }
     return json({ error: errorMessage(error, "ไม่สามารถบันทึกข้อมูลออเดอร์ได้") }, error.status || 500);
   }

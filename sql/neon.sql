@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS orders (
   order_number BIGINT GENERATED ALWAYS AS IDENTITY UNIQUE,
   customer_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   service TEXT NOT NULL
-    CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore')),
+    CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore', 'oculus')),
   summary TEXT NOT NULL,
   game_username TEXT NOT NULL,
   game_uid TEXT NOT NULL,

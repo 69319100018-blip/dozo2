@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS orders (
   -- nullable = ออเดอร์จากผู้ใช้ที่ไม่ล็อกอิน (anonymous)
   customer_id UUID REFERENCES users(id) ON DELETE RESTRICT,
   service TEXT NOT NULL
-    CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore')),
+    CHECK (service IN ('farm-gem', 'material', 'build-char', 'abyss', 'explore', 'oculus')),
   summary TEXT NOT NULL,
   game_username TEXT NOT NULL,
   game_uid TEXT NOT NULL,
