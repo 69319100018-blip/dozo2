@@ -2027,36 +2027,40 @@ html, body {
 }
 
 .auth-icon {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.35rem;
+  height: 1.35rem;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1;
+  line-height: 0;
+}
+
+.auth-icon svg {
+  display: block;
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .auth-icon-hoyoverse {
-  background: linear-gradient(135deg, #5eead4, #38bdf8);
-  color: #0b1220;
+  background: linear-gradient(135deg, #1ec8c8, #0ea5e9);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
+
 .auth-icon-google {
   background: #fff;
-  color: #ea4335;
-  font-family: Arial, sans-serif;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
+
 .auth-icon-apple {
-  background: #111;
+  background: #0a0a0a;
   color: #fff;
-  font-size: 0.95rem;
 }
+
 .auth-icon-facebook {
   background: #1877f2;
   color: #fff;
-  font-family: Arial, sans-serif;
-  font-size: 0.95rem;
 }
 
 .auth-method-hint {
