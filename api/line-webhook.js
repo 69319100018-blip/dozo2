@@ -68,6 +68,7 @@ async function handler(request) {
     return json({ error: "invalid json" }, 400);
   }
 
+  
   const events = Array.isArray(payload.events) ? payload.events : [];
   for (const event of events) {
     const type = event?.type;
