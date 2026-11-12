@@ -2385,19 +2385,81 @@ async function renderStaffJobs() {
   });
 }
 
-async function renderCustomerHistory() {
+/** cache คิวสาธารณะ — ใช้กรอง/ค้นหาฝั่ง client */
+let publicQueueCache = [];
+
+function getQueueSearchQuery() {
+  return (document.getElementById("queue-search")?.value || "").trim().toLowerCase();
+}
+
+function getQueueStatusFilter() {
+  return document.getElementById("queue-status-filter")?.value || "all";
+}
+
+function filterPublicQueue(orders) {
+  const q = getQueueSearchQuery();
+  const statusFilter = getQueueStatusFilter();
+  return orders.filter((o) => {
+    const st = o.status || "pending";
+    if (statusFilter !== "all" && st !== statusFilter) return false;
+    if (!q) return true;
+    const hay = [
+      o.orderNumber != null ? String(o.orderNumber) : "",
+      o.orderNumber != null ? `#${o.orderNumber}` : "",
+      o.facebookName || "",
+      o.gameUsername || "",
+      o.summary || "",
+      SERVICE_LABEL[o.service] || o.service || "",
+      STATUS_LABEL[st] || st,
+      o.totalPrice != null ? String(o.totalPrice) : "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    // รองรับค้นหาแบบตัดช่องว่าง / บางส่วนของเลขคิว
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return tokens.every((t) => hay.includes(t));
+  });
+}
+
+function paintPublicQueueTable(orders) {
   const tbody = document.getElementById("queue-tbody");
   const countEl = document.getElementById("queue-count");
+  const hintEl = document.getElementById("queue-filter-hint");
+  const clearBtn = document.getElementById("queue-search-clear");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">กำลังโหลดคิว...</td></tr>`;
-  try {
-    const orders = await DozoAPI.listPublicQueue();
-    if (countEl) countEl.textContent = String(orders.length);
-    if (!orders.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์ในคิว</td></tr>`;
-      return;
+
+  const q = getQueueSearchQuery();
+  const statusFilter = getQueueStatusFilter();
+  const filtered = filterPublicQueue(orders);
+
+  if (countEl) countEl.textContent = String(filtered.length);
+  if (clearBtn) clearBtn.classList.toggle("hidden", !q);
+
+  if (hintEl) {
+    const filtering = q || statusFilter !== "all";
+    if (!filtering) {
+      hintEl.textContent = "";
+    } else if (!filtered.length) {
+      hintEl.textContent = "ไม่พบรายการตามเงื่อนไข";
+    } else {
+      hintEl.textContent = `แสดง ${filtered.length} จาก ${orders.length} รายการ`;
     }
-    tbody.innerHTML = orders.map((o, idx) => {
+  }
+
+  if (!orders.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์ในคิว</td></tr>`;
+    return;
+  }
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">
+      ไม่พบคิวที่ตรงกับคำค้น${q ? ` “${escapeHtml(q)}”` : ""}${statusFilter !== "all" ? ` / สถานะ ${escapeHtml(STATUS_LABEL[statusFilter] || statusFilter)}` : ""}
+      <br><small class="muted">ลองใช้เลขออเดอร์ (#1) หรือชื่อเฟสที่กรอกตอนสั่ง</small>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered
+    .map((o) => {
       const st = o.status || "pending";
       const price =
         o.totalPrice != null && o.totalPrice !== ""
@@ -2412,9 +2474,24 @@ async function renderCustomerHistory() {
         <td class="queue-price">${escapeHtml(price)}</td>
         <td><span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span></td>
       </tr>`;
-    }).join("");
+    })
+    .join("");
+}
+
+async function renderCustomerHistory() {
+  const tbody = document.getElementById("queue-tbody");
+  const countEl = document.getElementById("queue-count");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">กำลังโหลดคิว...</td></tr>`;
+  try {
+    const orders = await DozoAPI.listPublicQueue();
+    publicQueueCache = Array.isArray(orders) ? orders : [];
+    paintPublicQueueTable(publicQueueCache);
   } catch (error) {
+    publicQueueCache = [];
     if (countEl) countEl.textContent = "-";
+    const hintEl = document.getElementById("queue-filter-hint");
+    if (hintEl) hintEl.textContent = "";
     tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(error.message || "โหลดคิวไม่สำเร็จ")}</td></tr>`;
   }
 }
@@ -2597,6 +2674,30 @@ document.getElementById("btn-refresh-queue")?.addEventListener("click", async ()
       btn.disabled = false;
     }
   }
+});
+
+// ค้นหา / กรองคิวสาธารณะ (client-side บน cache)
+let queueSearchTimer = null;
+document.getElementById("queue-search")?.addEventListener("input", () => {
+  clearTimeout(queueSearchTimer);
+  queueSearchTimer = setTimeout(() => {
+    paintPublicQueueTable(publicQueueCache);
+  }, 120);
+});
+document.getElementById("queue-search")?.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    e.target.value = "";
+    paintPublicQueueTable(publicQueueCache);
+  }
+});
+document.getElementById("queue-search-clear")?.addEventListener("click", () => {
+  const input = document.getElementById("queue-search");
+  if (input) input.value = "";
+  paintPublicQueueTable(publicQueueCache);
+  input?.focus();
+});
+document.getElementById("queue-status-filter")?.addEventListener("change", () => {
+  paintPublicQueueTable(publicQueueCache);
 });
 
 // ---------- Start ----------

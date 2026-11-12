@@ -1247,6 +1247,34 @@
           </div>
         </section>
 
+        <div class="queue-toolbar glass">
+          <div class="queue-search-wrap">
+            <span class="queue-search-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <input
+              type="search"
+              id="queue-search"
+              class="queue-search-input"
+              placeholder="ค้นหาเลขออเดอร์, ชื่อเฟส, รายละเอียด..."
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+            <button type="button" class="queue-search-clear hidden" id="queue-search-clear" aria-label="ล้างคำค้น">×</button>
+          </div>
+          <select id="queue-status-filter" class="queue-status-filter" aria-label="กรองสถานะ">
+            <option value="all">ทุกสถานะ</option>
+            <option value="pending">รอดำเนินการ</option>
+            <option value="doing">กำลังทำ</option>
+            <option value="done">เสร็จแล้ว</option>
+            <option value="cancel">ยกเลิก</option>
+          </select>
+          <span class="queue-filter-hint" id="queue-filter-hint"></span>
+        </div>
+
         <div class="queue-table-wrap glass">
           <table class="queue-table" id="queue-table">
             <thead>
