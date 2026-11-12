@@ -60,6 +60,7 @@ function buildDetails(service, raw, userRole = "customer") {
     loginId: cleanText(d.loginId, 120) || null,
     gamePass: cleanText(d.gamePass, 200) || null,
     ar: d.ar != null && Number.isFinite(Number(d.ar)) ? Number(d.ar) : null,
+    authMethod: cleanText(d.authMethod, 20) || "hoyoverse",
   };
 
   if (service === "farm-gem") {
@@ -67,12 +68,36 @@ function buildDetails(service, raw, userRole = "customer") {
     const priceMap = getFarmPriceMap(userRole);
     if (!priceMap.has(gems)) throw new Error("แพ็กเกจเจมไม่ถูกต้อง");
     const rush = d.rush === true;
+    const noDailyGems = d.noDailyGems === true;
+    const noAbyssTheaterGems = d.noAbyssTheaterGems === true;
+    const combat = d.combat === "cannot" ? "cannot" : "can";
+    const authMethod = cleanText(d.authMethod, 20) || "hoyoverse";
     const basePrice = priceMap.get(gems);
-    const total = rush ? Math.round(basePrice * 1.3) : basePrice;
+    let total = rush ? Math.round(basePrice * 1.3) : basePrice;
+    let extra = 0;
+    if (noDailyGems) extra += 20;
+    if (noAbyssTheaterGems) extra += 50;
+    if (combat === "cannot") extra += 50;
+    total += extra;
+    const extraBits = [];
+    if (noDailyGems) extraBits.push("ไม่นับเจมประจำวัน +20");
+    if (noAbyssTheaterGems) extraBits.push("ไม่นับอบิส/โรงละคร +50");
+    if (combat === "cannot") extraBits.push("ตีมอนไม่ไหว +50");
     return {
-      details: { ...details, ...accountFields, gems, rush, memberPrice: isMemberRole(userRole) },
+      details: {
+        ...details,
+        ...accountFields,
+        gems,
+        rush,
+        noDailyGems,
+        noAbyssTheaterGems,
+        combat,
+        authMethod,
+        extraFees: extra,
+        memberPrice: isMemberRole(userRole),
+      },
       totalPrice: total,
-      summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""} · ${total}฿`,
+      summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${extraBits.length ? ` · ${extraBits.join(" · ")}` : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""} · ${total}฿`,
     };
   }
 

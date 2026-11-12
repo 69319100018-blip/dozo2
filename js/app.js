@@ -694,12 +694,21 @@ function renderPackages() {
 
 }
 
+function getFarmExtraFees() {
+  let extra = 0;
+  if (document.getElementById("farm-no-daily-gems")?.checked) extra += 20;
+  if (document.getElementById("farm-no-abyss-theater-gems")?.checked) extra += 50;
+  if (document.querySelector('input[name="farm-combat"]:checked')?.value === "cannot") extra += 50;
+  return extra;
+}
+
 function getFarmTotalAmount() {
   if (!selectedPackage) return null;
   let price = Number(selectedPackage.price) || 0;
   if (rushCheck?.checked) {
     price = Math.round(price * 1.3);
   }
+  price += getFarmExtraFees();
   return price > 0 ? price : null;
 }
 
@@ -716,6 +725,82 @@ function updateTotal() {
 }
 
 rushCheck?.addEventListener("change", updateTotal);
+document.getElementById("farm-no-daily-gems")?.addEventListener("change", updateTotal);
+document.getElementById("farm-no-abyss-theater-gems")?.addEventListener("change", updateTotal);
+document.querySelectorAll('input[name="farm-combat"]').forEach((el) => {
+  el.addEventListener("change", updateTotal);
+});
+
+const AUTH_METHOD_META = {
+  hoyoverse: {
+    hint: "สมัครด้วย Hoyoverse — กรอกอีเมล/ยูสเซอร์และรหัสผ่านบัญชีเกม",
+    loginLabel: "4. ID (ล็อกอิน)",
+    loginPlaceholder: "อีเมล / ยูสเซอร์ล็อกอิน Hoyoverse",
+    passLabel: "5. Pass",
+    passPlaceholder: "รหัสผ่านบัญชี Hoyoverse",
+  },
+  google: {
+    hint: "สมัครด้วย Google — ใช้อีเมล Google ที่ผูกกับไอดีเกม",
+    loginLabel: "4. อีเมล Google",
+    loginPlaceholder: "เช่น name@gmail.com",
+    passLabel: "5. รหัสผ่าน Google",
+    passPlaceholder: "รหัสผ่านบัญชี Google",
+  },
+  apple: {
+    hint: "สมัครด้วย Apple — ใช้ Apple ID ที่ผูกกับไอดีเกม",
+    loginLabel: "4. Apple ID",
+    loginPlaceholder: "อีเมล Apple ID",
+    passLabel: "5. รหัสผ่าน Apple",
+    passPlaceholder: "รหัสผ่าน Apple ID",
+  },
+  facebook: {
+    hint: "สมัครด้วย Facebook — ใช้บัญชี Facebook ที่ผูกกับไอดีเกม",
+    loginLabel: "4. บัญชี Facebook",
+    loginPlaceholder: "อีเมล / เบอร์ / ชื่อผู้ใช้ Facebook",
+    passLabel: "5. รหัสผ่าน Facebook",
+    passPlaceholder: "รหัสผ่านบัญชี Facebook",
+  },
+};
+
+function applyAuthMethod(prefix, method) {
+  const meta = AUTH_METHOD_META[method] || AUTH_METHOD_META.hoyoverse;
+  const hidden = document.getElementById(`${prefix}-auth-method`);
+  const hint = document.getElementById(`${prefix}-auth-method-hint`);
+  const panel = document.getElementById(`${prefix}-auth-fields`);
+  const loginLabel = document.getElementById(`${prefix}-login-id-label`);
+  const passLabel = document.getElementById(`${prefix}-pass-label`);
+  const loginInput = document.getElementById(`${prefix}-game-login-id`);
+  const passInput = document.getElementById(`${prefix}-game-pass`);
+
+  if (hidden) hidden.value = method;
+  if (hint) hint.textContent = meta.hint;
+  if (loginLabel) loginLabel.textContent = meta.loginLabel;
+  if (passLabel) passLabel.textContent = meta.passLabel;
+  if (loginInput) loginInput.placeholder = meta.loginPlaceholder;
+  if (passInput) passInput.placeholder = meta.passPlaceholder;
+
+  if (panel) {
+    panel.classList.remove("is-active");
+    // force reflow for animation restart
+    void panel.offsetWidth;
+    panel.classList.add("is-active");
+  }
+
+  document.querySelectorAll(`.auth-method-tabs[data-auth-prefix="${prefix}"] .auth-method-btn`).forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.authMethod === method);
+  });
+}
+
+function bindAuthMethodTabs() {
+  document.querySelectorAll(".auth-method-tabs").forEach((tabs) => {
+    const prefix = tabs.dataset.authPrefix;
+    tabs.querySelectorAll(".auth-method-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        applyAuthMethod(prefix, btn.dataset.authMethod || "hoyoverse");
+      });
+    });
+  });
+}
 
 // ---------- PromptPay Dynamic QR ----------
 let promptPayId = null;
@@ -936,9 +1021,18 @@ farmForm?.addEventListener("submit", async (e) => {
   const facebookName = document.getElementById("farm-facebook-name")?.value.trim() || "";
   if (!facebookName || facebookName.length < 2) { alert("กรุณากรอกชื่อเฟสเพื่อยืนยันตัวตน"); return; }
 
+  const noDailyGems = !!document.getElementById("farm-no-daily-gems")?.checked;
+  const noAbyssTheaterGems = !!document.getElementById("farm-no-abyss-theater-gems")?.checked;
+  const combat = document.querySelector('input[name="farm-combat"]:checked')?.value || "can";
+  const authMethod = document.getElementById("farm-auth-method")?.value || "hoyoverse";
+
   const details = {
     gems: selectedPackage.gems,
     rush: rushCheck.checked,
+    noDailyGems,
+    noAbyssTheaterGems,
+    combat,
+    authMethod,
     prohibitions: document.getElementById("prohibitions").value.trim(),
     stream: document.querySelector('input[name="stream"]:checked')?.value || "no",
     gameName: account.name,
@@ -1572,6 +1666,7 @@ abyssForm?.addEventListener("submit", async (e) => {
     detail: document.getElementById("abyss-detail")?.value.trim() || "",
     prohibitions: document.getElementById("abyss-prohibitions")?.value.trim() || "",
     stream: document.querySelector('input[name="abyss-stream"]:checked')?.value || "no",
+    authMethod: document.getElementById("abyss-auth-method")?.value || "hoyoverse",
     gameName: account.name,
     server: account.server,
     loginId: account.loginId,
@@ -1620,6 +1715,7 @@ exploreForm?.addEventListener("submit", async (e) => {
     detail: document.getElementById("explore-detail")?.value.trim() || "",
     prohibitions: document.getElementById("explore-prohibitions")?.value.trim() || "",
     stream: document.querySelector('input[name="explore-stream"]:checked')?.value || "no",
+    authMethod: document.getElementById("explore-auth-method")?.value || "hoyoverse",
     gameName: account.name,
     server: account.server,
     loginId: account.loginId,
@@ -2078,5 +2174,6 @@ document.getElementById("btn-refresh-queue")?.addEventListener("click", async ()
 // ---------- Start ----------
 window.addEventListener("DOMContentLoaded", () => {
   bindExplorePercentButtons();
+  bindAuthMethodTabs();
   startLoading();
 });
