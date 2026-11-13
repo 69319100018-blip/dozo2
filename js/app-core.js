@@ -200,3 +200,105 @@ window.addEventListener("DOMContentLoaded", () => {
   bindHeaderScroll();
   startLoading();
 });
+/* ============================================
+   Anti DevTools / Inspect guard (client-side)
+   กันคนทั่วไป — ไม่ใช่ security จริง
+   ============================================ */
+(function () {
+  "use strict";
+
+  // 1) บล็อกคีย์ลัดเปิด DevTools
+  document.addEventListener(
+    "keydown",
+    function (e) {
+      const key = e.key || "";
+      const ctrl = e.ctrlKey || e.metaKey;
+      const shift = e.shiftKey;
+      const alt = e.altKey;
+
+      // F12
+      if (key === "F12") {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+      if (ctrl && shift && (key === "I" || key === "J" || key === "C" || key === "i" || key === "j" || key === "c")) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // Ctrl+U (view source)
+      if (ctrl && (key === "U" || key === "u")) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // Ctrl+S (save page) — optional
+      if (ctrl && (key === "S" || key === "s")) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // Mac: Cmd+Option+I / J / C
+      if (e.metaKey && alt && (key === "I" || key === "J" || key === "C" || key === "i" || key === "j" || key === "c")) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    },
+    true
+  );
+
+  // 2) ปิดคลิกขวา (context menu)
+  document.addEventListener(
+    "contextmenu",
+    function (e) {
+      e.preventDefault();
+      return false;
+    },
+    true
+  );
+
+  // 3) ตรวจจับว่า DevTools เปิดอยู่ (ประมาณการจากขนาดหน้าต่าง)
+  //    ปรับ threshold ตามธีม/เครื่องได้
+  let devtoolsOpen = false;
+  const threshold = 160;
+
+  function checkDevTools() {
+    const widthDiff = window.outerWidth - window.innerWidth > threshold;
+    const heightDiff = window.outerHeight - window.innerHeight > threshold;
+    const open = widthDiff || heightDiff;
+
+    if (open && !devtoolsOpen) {
+      devtoolsOpen = true;
+      onDevToolsOpen();
+    } else if (!open && devtoolsOpen) {
+      devtoolsOpen = false;
+    }
+  }
+
+  function onDevToolsOpen() {
+    // เลือกอย่างใดอย่างหนึ่งตามที่ต้องการ:
+
+    // A) แค่เตือน
+    // console.clear();
+    // alert("ไม่สามารถใช้เครื่องมือนักพัฒนาได้");
+
+    // B) เคลียร์หน้า / redirect
+    // document.body.innerHTML = "<h1 style='color:#fff;text-align:center;margin-top:20vh'>Access Denied</h1>";
+    // window.location.href = "/";
+
+    // C) เงียบไว้ (แค่บล็อกคีย์ + คลิกขวา)
+  }
+
+  setInterval(checkDevTools, 500);
+
+  // 4) กัน drag รูป / เลือกข้อความ (optional)
+  document.addEventListener("dragstart", (e) => e.preventDefault());
+  // document.addEventListener("selectstart", (e) => e.preventDefault());
+})();
