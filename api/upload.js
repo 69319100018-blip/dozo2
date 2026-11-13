@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { get, put } from "@vercel/blob";
+import { get, issueSignedToken, put } from "@vercel/blob";
+import { handleUploadPresigned } from "@vercel/blob/client";
 import {
   assertSameOrigin,
   errorMessage,
@@ -10,18 +11,92 @@ import {
   verifyFileViewToken,
 } from "../lib/server.js";
 
-const MAX_FILE_SIZE = 3 * 1024 * 1024;
+// Vercel Blob supports objects up to 5 TB; direct client uploads avoid the
+// 4.5 MB request-body limit imposed on Vercel Functions.
+const MAX_FILE_SIZE = 5 * 1024 ** 4;
 const ALLOWED_TYPES = new Map([
   ["image/jpeg", "jpg"],
   ["image/png", "png"],
   ["image/webp", "webp"],
 ]);
+const ALLOWED_PURPOSES = new Set(["slip", "material_screenshot", "map_screenshot"]);
+
+function isValidUploadPath(pathname, user, purpose, contentType) {
+  if (typeof pathname !== "string" || pathname.includes("..") || pathname.startsWith("/")) return false;
+  const ext = ALLOWED_TYPES.get(contentType);
+  if (!ext) return false;
+
+  const filePattern = new RegExp(`^${purpose}-[0-9a-f-]{36}\\.${ext}$`, "i");
+  const segments = pathname.split("/");
+  if (user) {
+    return segments.length === 3 && segments[0] === "orders" && segments[1] === user.id && filePattern.test(segments[2]);
+  }
+  return segments.length === 4 && segments[0] === "orders" && segments[1] === "guest" &&
+    /^[0-9a-f-]{36}$/i.test(segments[2]) && filePattern.test(segments[3]);
+}
 
 async function handler(request) {
   try {
     if (request.method === "POST") {
       // อนุญาตอัปโหลดโดยไม่ล็อกอิน (guest)
       const user = await getSessionUser(request);
+      if ((request.headers.get("content-type") || "").includes("application/json")) {
+        const body = await request.json();
+
+        if (body?.action === "prepare") {
+          assertSameOrigin(request);
+          const purpose = String(body.purpose || "");
+          const contentType = String(body.contentType || "");
+          if (!ALLOWED_PURPOSES.has(purpose) || !ALLOWED_TYPES.has(contentType)) {
+            return json({ error: "ประเภทไฟล์ภาพไม่ถูกต้อง" }, 400);
+          }
+
+          const ownerKey = user?.id || `guest/${randomUUID()}`;
+          const pathname = `orders/${ownerKey}/${purpose}-${randomUUID()}.${ALLOWED_TYPES.get(contentType)}`;
+          return json({ pathname });
+        }
+
+        if (body?.type === "blob.generate-presigned-url") assertSameOrigin(request);
+        const result = await handleUploadPresigned({
+          body,
+          request,
+          getSignedToken: async (pathname, clientPayload) => {
+            let metadata;
+            try {
+              metadata = JSON.parse(clientPayload || "{}");
+            } catch {
+              throw new Error("ข้อมูลไฟล์อัปโหลดไม่ถูกต้อง");
+            }
+            const purpose = String(metadata.purpose || "");
+            const contentType = String(metadata.contentType || "");
+            if (!ALLOWED_PURPOSES.has(purpose) || !ALLOWED_TYPES.has(contentType) ||
+                !isValidUploadPath(pathname, user, purpose, contentType)) {
+              throw new Error("เส้นทางหรือชนิดไฟล์อัปโหลดไม่ถูกต้อง");
+            }
+
+            const validUntil = Date.now() + 10 * 60 * 1000;
+            const token = await issueSignedToken({
+              pathname,
+              operations: ["put"],
+              allowedContentTypes: [contentType],
+              maximumSizeInBytes: MAX_FILE_SIZE,
+              validUntil,
+            });
+            return {
+              token,
+              urlOptions: {
+                allowedContentTypes: [contentType],
+                maximumSizeInBytes: MAX_FILE_SIZE,
+                validUntil,
+                addRandomSuffix: false,
+                allowOverwrite: false,
+              },
+            };
+          },
+        });
+        return json(result);
+      }
+
       assertSameOrigin(request);
       const form = await request.formData();
       const file = form.get("file");
@@ -30,13 +105,13 @@ async function handler(request) {
       if (!file || typeof file.arrayBuffer !== "function") {
         return json({ error: "ไม่พบไฟล์ที่อัปโหลด" }, 400);
       }
-      if (!new Set(["slip", "material_screenshot", "map_screenshot"]).has(purpose)) {
+      if (!ALLOWED_PURPOSES.has(purpose)) {
         return json({ error: "ประเภทไฟล์ไม่ถูกต้อง" }, 400);
       }
       if (!ALLOWED_TYPES.has(file.type)) {
         return json({ error: "รองรับเฉพาะ JPG, PNG และ WEBP" }, 400);
       }
-      if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
+      if (file.size <= 0 || file.size > 3 * 1024 * 1024) {
         return json({ error: "ไฟล์ต้องมีขนาดไม่เกิน 3 MB" }, 400);
       }
 

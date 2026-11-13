@@ -31,23 +31,37 @@ function bindImageUpload({ inputId, areaId, placeholderId, previewId, errorId, o
   if (!input || !area) return;
 
   function handle(file) {
-    if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+    if (!file) return;
+    if (!file.size || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       onChange(false, null);
+      if (preview?.dataset.objectUrl) {
+        URL.revokeObjectURL(preview.dataset.objectUrl);
+        delete preview.dataset.objectUrl;
+      }
+      if (preview) preview.src = "";
       preview?.classList.add("hidden");
       if (placeholder) placeholder.style.display = "block";
+      if (error) {
+        error.textContent = file.size
+          ? "รองรับเฉพาะไฟล์ JPG, PNG และ WEBP"
+          : "ไฟล์ภาพว่างเปล่าหรืออ่านไม่ได้";
+        error.classList.add("show");
+      }
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (preview) {
-        preview.src = e.target.result;
-        preview.classList.remove("hidden");
-      }
-      if (placeholder) placeholder.style.display = "none";
-      onChange(true, file);
-      error?.classList.remove("show");
-    };
-    reader.readAsDataURL(file);
+
+    if (preview) {
+      if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+      preview.dataset.objectUrl = URL.createObjectURL(file);
+      preview.src = preview.dataset.objectUrl;
+      preview.classList.remove("hidden");
+    }
+    if (placeholder) placeholder.style.display = "none";
+    onChange(true, file);
+    if (error) {
+      error.textContent = "ต้องอัปโหลดภาพก่อนจึงจะกดสั่งซื้อได้";
+      error.classList.remove("show");
+    }
   }
 
   input.addEventListener("change", (e) => handle(e.target.files[0]));

@@ -10,12 +10,21 @@ function renderPackages() {
   hasFarmMap = false;
   selectedFarmMapFile = null;
   if (slipUpload) slipUpload.value = "";
+  if (slipPreview?.dataset.objectUrl) {
+    URL.revokeObjectURL(slipPreview.dataset.objectUrl);
+    delete slipPreview.dataset.objectUrl;
+  }
+  if (slipPreview) slipPreview.src = "";
   slipPreview?.classList.add("hidden");
   if (uploadPlaceholder) uploadPlaceholder.style.display = "block";
   const farmMapPreview = document.getElementById("farm-map-preview");
   const farmMapPlaceholder = document.getElementById("farm-map-placeholder");
   const farmMapInput = document.getElementById("farm-map-upload");
   if (farmMapPreview) {
+    if (farmMapPreview.dataset.objectUrl) {
+      URL.revokeObjectURL(farmMapPreview.dataset.objectUrl);
+      delete farmMapPreview.dataset.objectUrl;
+    }
     farmMapPreview.src = "";
     farmMapPreview.classList.add("hidden");
   }
@@ -288,26 +297,35 @@ document.addEventListener("click", (e) => {
 
 // ---------- Slip Upload ----------
 function handleSlipFile(file) {
-  if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+  if (!file) return;
+  if (!file.size || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
     selectedFarmSlipFile = null;
     hasSlip = false;
+    if (slipPreview.dataset.objectUrl) {
+      URL.revokeObjectURL(slipPreview.dataset.objectUrl);
+      delete slipPreview.dataset.objectUrl;
+    }
+    slipPreview.src = "";
     slipPreview.classList.add("hidden");
     uploadPlaceholder.style.display = "block";
+    slipError.textContent = file.size
+      ? "รองรับเฉพาะไฟล์ JPG, PNG และ WEBP"
+      : "ไฟล์ภาพว่างเปล่าหรืออ่านไม่ได้";
+    slipError.classList.add("show");
     updateSubmitState();
     return;
   }
 
   selectedFarmSlipFile = file;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    slipPreview.src = e.target.result;
-    slipPreview.classList.remove("hidden");
-    uploadPlaceholder.style.display = "none";
-    hasSlip = true;
-    slipError.classList.remove("show");
-    updateSubmitState();
-  };
-  reader.readAsDataURL(file);
+  if (slipPreview.dataset.objectUrl) URL.revokeObjectURL(slipPreview.dataset.objectUrl);
+  slipPreview.dataset.objectUrl = URL.createObjectURL(file);
+  slipPreview.src = slipPreview.dataset.objectUrl;
+  slipPreview.classList.remove("hidden");
+  uploadPlaceholder.style.display = "none";
+  hasSlip = true;
+  slipError.textContent = "ต้องอัปโหลดสลิปก่อนจึงจะกดสั่งซื้อได้";
+  slipError.classList.remove("show");
+  updateSubmitState();
 }
 
 slipUpload?.addEventListener("change", (e) => {

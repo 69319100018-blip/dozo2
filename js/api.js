@@ -23,6 +23,12 @@
     return data;
   }
 
+  let blobClientPromise;
+  function getBlobClient() {
+    blobClientPromise ||= import("https://esm.sh/@vercel/blob@2.9.0/client?bundle");
+    return blobClientPromise;
+  }
+
   window.DozoAPI = {
     async getConfig() {
       return request("/api/config", { method: "GET" });
@@ -104,10 +110,28 @@
     },
 
     async uploadFile(file, purpose) {
-      const form = new FormData();
-      form.append("file", file, file.name || "upload");
-      form.append("purpose", purpose);
-      return request("/api/upload", { method: "POST", body: form });
+      if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        throw new Error("รองรับเฉพาะไฟล์ JPG, PNG และ WEBP");
+      }
+
+      const { pathname } = await request("/api/upload", {
+        method: "POST",
+        body: JSON.stringify({ action: "prepare", purpose, contentType: file.type }),
+      });
+      const { uploadPresigned } = await getBlobClient();
+      try {
+        const blob = await uploadPresigned(pathname, file, {
+          access: "private",
+          handleUploadUrl: "/api/upload",
+          clientPayload: JSON.stringify({ purpose, contentType: file.type }),
+          contentType: file.type,
+          multipart: file.size > 100 * 1024 * 1024,
+        });
+        return { success: true, pathname: blob.pathname, size: file.size, contentType: file.type };
+      } catch (error) {
+        console.error("Direct image upload failed", error);
+        throw new Error(error?.message || "อัปโหลดภาพไม่สำเร็จ กรุณาลองใหม่");
+      }
     },
 
     fileUrl(pathname) {
