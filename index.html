@@ -10,7 +10,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <!-- Modular CSS (split for maintainability; style.css kept as backup) -->
+  <link rel="stylesheet" href="css/01-base.css" />
+  <link rel="stylesheet" href="css/02-dashboard.css" />
+  <link rel="stylesheet" href="css/03-forms.css" />
+  <link rel="stylesheet" href="css/04-admin.css" />
+  <link rel="stylesheet" href="css/05-queue.css" />
+  <link rel="stylesheet" href="css/06-polish.css" />
 </head>
 <body>
   <!-- ========== VIDEO BACKGROUND ========== -->
@@ -1559,9 +1565,20 @@
   </div>
 
   <!-- QRCode.js + PromptPay dynamic QR -->
+  <!-- QRCode.js + modular app scripts (order matters) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/promptpay.js"></script>
   <script src="js/api.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/app-core.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/orders-farm.js"></script>
+  <script src="js/orders-material.js"></script>
+  <script src="js/orders-build.js"></script>
+  <script src="js/orders-abyss-explore.js"></script>
+  <script src="js/orders-oculus.js"></script>
+  <script src="js/admin.js"></script>
 </body>
 </html>

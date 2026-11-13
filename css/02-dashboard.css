@@ -1,0 +1,374 @@
+/* ============================================
+   Dozo Genshin — CSS module: dashboard
+   Split from style.css for easier maintenance
+   ============================================ */
+/* ========== DASHBOARD ========== */
+#dashboard-screen {
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: transparent;
+  overflow-y: auto;
+}
+
+#dashboard-screen.active { display: flex; }
+
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.6rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: rgba(7, 11, 20, 0.72);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.brand {
+  font-size: 1.35rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, #f1f5f9 30%, var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand span {
+  background: linear-gradient(135deg, var(--gold), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.navbar {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1;
+  justify-content: center;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav-item {
+  padding: 0.48rem 1.2rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.35s var(--bounce);
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.nav-item.active {
+  color: #061018;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-color: transparent;
+  box-shadow: 0 4px 18px rgba(184, 141, 82, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.user-email {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.btn-logout {
+  padding: 0.45rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.84rem;
+  transition: all 0.3s var(--bounce);
+  font-weight: 500;
+}
+
+.btn-logout:hover {
+  border-color: var(--error);
+  color: var(--error);
+  background: rgba(251, 113, 133, 0.1);
+  transform: translateY(-1px);
+}
+
+.dash-main {
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.1rem 1.4rem 4.5rem;
+}
+
+/* Views */
+.view { display: none; }
+.view.active {
+  display: block;
+  animation: fadeUpBounce 0.55s var(--bounce) both;
+}
+
+.welcome-section {
+  margin-bottom: 2rem;
+  padding: 1.6rem 1.7rem;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(213, 183, 125, 0.06) 0%, transparent 55%),
+    rgba(14, 22, 40, 0.45);
+  border: 1px solid rgba(213, 183, 125, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-section::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(213, 183, 125, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.welcome-section h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  position: relative;
+}
+
+.welcome-section p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  position: relative;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.offline-services-note {
+  margin-top: 1.5rem;
+  padding: 1.35rem 1.5rem;
+  border-radius: var(--radius);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.1rem 1.5rem;
+  border: 1px solid rgba(240, 201, 135, 0.18);
+  background: linear-gradient(135deg, rgba(240, 201, 135, 0.06), rgba(15, 23, 42, 0.35));
+}
+
+.offline-services-body {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.offline-services-note h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.01em;
+}
+
+.offline-services-note p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.offline-services-note p + p {
+  margin-top: 0.25rem;
+}
+
+.offline-services-note strong {
+  color: var(--gold);
+}
+
+.offline-services-btn {
+  text-decoration: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.service-card {
+  border-radius: var(--radius);
+  padding: 1.65rem 1.4rem;
+  transition:
+    transform 0.45s var(--bounce),
+    border-color 0.3s,
+    box-shadow 0.45s ease,
+    background 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  animation: cardIn 0.6s var(--bounce) both;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(213, 183, 125, 0.06) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.service-card:nth-child(1) { animation-delay: 0.05s; }
+.service-card:nth-child(2) { animation-delay: 0.12s; }
+.service-card:nth-child(3) { animation-delay: 0.19s; }
+.service-card:nth-child(4) { animation-delay: 0.26s; }
+.service-card:nth-child(5) { animation-delay: 0.33s; }
+.service-card:nth-child(6) { animation-delay: 0.4s; }
+.service-card:nth-child(7) { animation-delay: 0.47s; }
+.service-card:nth-child(8) { animation-delay: 0.54s; }
+.service-card:nth-child(9) { animation-delay: 0.61s; }
+
+.service-card-disabled {
+  position: relative;
+  opacity: 0.48;
+  filter: grayscale(0.35);
+  pointer-events: none;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+.service-card-disabled:hover {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.service-card-disabled:hover::before {
+  opacity: 0;
+}
+
+.service-card-disabled .btn-service {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.coming-soon-badge {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #0f172a;
+  background: linear-gradient(135deg, rgba(240, 201, 135, 0.95), rgba(213, 183, 125, 0.85));
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  line-height: 1;
+  z-index: 2;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.service-card:hover {
+  transform: translateY(-8px) scale(1.015);
+  border-color: rgba(213, 183, 125, 0.4);
+  box-shadow: var(--shadow-lift);
+  background: var(--bg-card-hover);
+}
+
+.service-card:hover::before {
+  opacity: 1;
+}
+
+.card-icon {
+  font-size: 2.05rem;
+  margin-bottom: 0.85rem;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+  transition: transform 0.4s var(--bounce);
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(213, 183, 125, 0.08);
+  border: 1px solid rgba(213, 183, 125, 0.12);
+}
+
+.service-card:hover .card-icon {
+  transform: scale(1.1) translateY(-2px);
+  background: rgba(213, 183, 125, 0.14);
+  box-shadow: 0 0 20px rgba(213, 183, 125, 0.2);
+}
+
+.service-card h3 {
+  font-size: 1.12rem;
+  margin-bottom: 0.4rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.service-card p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.3rem;
+  flex-grow: 1;
+}
+
+.btn-service {
+  padding: 0.58rem 1.1rem;
+  background: var(--primary-soft);
+  border: 1.5px solid rgba(213, 183, 125, 0.38);
+  border-radius: 999px;
+  color: var(--primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.35s var(--bounce);
+  width: 100%;
+}
+
+.btn-service:hover {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #061018;
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgba(184, 141, 82, 0.35);
+  transform: translateY(-2px);
+}
+
