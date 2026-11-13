@@ -2161,6 +2161,40 @@ const STATUS_LABEL = {
   cancel: "ยกเลิก"
 };
 
+/** Compact status pill with mini progress steps (pending → doing → done) */
+function statusBadgeHtml(st) {
+  const s = st || "pending";
+  const label = STATUS_LABEL[s] || s;
+  if (s === "cancel") {
+    return `<span class="status-badge status-cancel">${escapeHtml(label)}</span>`;
+  }
+  const steps = ["pending", "doing", "done"];
+  const idx = Math.max(0, steps.indexOf(s));
+  const dots = steps
+    .map((key, i) => {
+      let cls = "status-dot";
+      if (i < idx) cls += " is-done";
+      else if (i === idx) cls += " is-current";
+      return `<span class="${cls}" data-step="${key}"></span>`;
+    })
+    .join("");
+  return `<span class="status-badge status-${escapeHtml(s)} status-with-steps">
+    <span class="status-steps" aria-hidden="true">${dots}</span>
+    <span class="status-label">${escapeHtml(label)}</span>
+  </span>`;
+}
+
+function emptyStateHtml(title, subtitle = "") {
+  return `<div class="empty-state glass empty-state-rich">
+    <div class="empty-emblem" aria-hidden="true">
+      <span class="empty-orbit"></span>
+      <span class="empty-letter">D</span>
+    </div>
+    <p class="empty-title">${escapeHtml(title)}</p>
+    ${subtitle ? `<p class="empty-sub">${escapeHtml(subtitle)}</p>` : ""}
+  </div>`;
+}
+
 function formatTime(iso) {
   try {
     const d = new Date(iso);
@@ -2265,7 +2299,7 @@ async function renderAdminOrders() {
         ${staffAssignSelectHtml(o)}
       </td>
       <td>
-        <span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span>
+        ${statusBadgeHtml(st)}
         ${statusSelectHtml(o.id, st)}
       </td>
     </tr>
@@ -2356,7 +2390,7 @@ async function renderStaffJobs() {
           </h3>
           <p class="staff-job-summary">${escapeHtml(o.summary || "-")}</p>
         </div>
-        <span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span>
+        ${statusBadgeHtml(st)}
       </div>
       <div class="staff-job-meta">
         <span>ลูกค้า: ${escapeHtml(o.facebookName || o.customerDisplayName || o.customerEmail || "ไม่ระบุ")}</span>
@@ -2452,13 +2486,18 @@ function paintPublicQueueTable(orders) {
   }
 
   if (!orders.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">ยังไม่มีออเดอร์ในคิว</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell empty-cell-rich">
+      <div class="empty-emblem" aria-hidden="true"><span class="empty-orbit"></span><span class="empty-letter">D</span></div>
+      <p class="empty-title">ยังไม่มีออเดอร์ในคิว</p>
+      <p class="empty-sub">เมื่อมีคนสั่งงาน คิวจะแสดงที่นี่แบบสาธารณะ</p>
+    </td></tr>`;
     return;
   }
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">
-      ไม่พบคิวที่ตรงกับคำค้น${q ? ` “${escapeHtml(q)}”` : ""}${statusFilter !== "all" ? ` / สถานะ ${escapeHtml(STATUS_LABEL[statusFilter] || statusFilter)}` : ""}
-      <br><small class="muted">ลองใช้เลขออเดอร์ (#1) หรือชื่อเฟสที่กรอกตอนสั่ง</small>
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell empty-cell-rich">
+      <div class="empty-emblem" aria-hidden="true"><span class="empty-orbit"></span><span class="empty-letter">D</span></div>
+      <p class="empty-title">ไม่พบคิวที่ตรงเงื่อนไข</p>
+      <p class="empty-sub">ลองใช้เลขออเดอร์ (#1) หรือชื่อเฟส${q ? ` — ค้นหา “${escapeHtml(q)}”` : ""}${statusFilter !== "all" ? ` / ${escapeHtml(STATUS_LABEL[statusFilter] || statusFilter)}` : ""}</p>
     </td></tr>`;
     return;
   }
@@ -2477,7 +2516,7 @@ function paintPublicQueueTable(orders) {
         <td class="queue-summary">${escapeHtml(o.summary || "-")}</td>
         <td class="queue-fb">${escapeHtml(o.facebookName || "-")}</td>
         <td class="queue-price">${escapeHtml(price)}</td>
-        <td><span class="status-badge status-${escapeHtml(st)}">${escapeHtml(STATUS_LABEL[st] || st)}</span></td>
+        <td>${statusBadgeHtml(st)}</td>
       </tr>`;
     })
     .join("");
@@ -2487,7 +2526,10 @@ async function renderCustomerHistory() {
   const tbody = document.getElementById("queue-tbody");
   const countEl = document.getElementById("queue-count");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">กำลังโหลดคิว...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="empty-cell empty-cell-rich">
+    <div class="empty-emblem is-loading" aria-hidden="true"><span class="empty-orbit"></span><span class="empty-letter">D</span></div>
+    <p class="empty-title">กำลังโหลดคิว...</p>
+  </td></tr>`;
   try {
     const orders = await DozoAPI.listPublicQueue();
     publicQueueCache = Array.isArray(orders) ? orders : [];
@@ -2754,8 +2796,20 @@ document.getElementById("queue-status-filter")?.addEventListener("change", () =>
 });
 
 // ---------- Start ----------
+/* Sticky glass header intensifies on scroll */
+function bindHeaderScroll() {
+  const header = document.querySelector(".dash-header");
+  if (!header) return;
+  const onScroll = () => {
+    header.classList.toggle("is-scrolled", window.scrollY > 12);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   bindExplorePercentButtons();
   bindAuthMethodTabs();
+  bindHeaderScroll();
   startLoading();
 });

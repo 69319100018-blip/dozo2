@@ -137,6 +137,31 @@
           </div>
         </section>
 
+        <!-- Trust row -->
+        <section class="trust-row" aria-label="จุดแข็งของบริการ">
+          <div class="trust-item glass">
+            <span class="trust-icon" aria-hidden="true">⚡</span>
+            <div>
+              <strong>คิวโปร่งใส</strong>
+              <p>ติดตามสถานะออเดอร์ได้ตลอด</p>
+            </div>
+          </div>
+          <div class="trust-item glass">
+            <span class="trust-icon" aria-hidden="true">🛡️</span>
+            <div>
+              <strong>ทีมดูแลเอง</strong>
+              <p>มีคนรับงานและอัปเดตสถานะ</p>
+            </div>
+          </div>
+          <div class="trust-item glass">
+            <span class="trust-icon" aria-hidden="true">💬</span>
+            <div>
+              <strong>ติดต่อสะดวก</strong>
+              <p>Facebook / LINE พร้อมช่วย</p>
+            </div>
+          </div>
+        </section>
+
         <!-- โปรโมชันสมัครสมาชิก (ลูกค้าทั่วไป) — แจ้งผ่านแชท แอดมินเปลี่ยน role ทีหลัง -->
         <section id="membership-promo" class="membership-promo glass customer-only">
           <div class="membership-promo-text">
@@ -155,6 +180,12 @@
           </div>
         </section>
 
+        <div class="section-ornament" aria-hidden="true">
+          <span class="ornament-line"></span>
+          <span class="ornament-gem">✦</span>
+          <span class="ornament-line"></span>
+        </div>
+
         <div class="section-heading">
           <div>
             <span class="section-kicker">EXPLORE OUR SERVICES</span>
@@ -166,30 +197,35 @@
 
         <section class="services-grid" aria-label="บริการของ Dozo Genshin">
           <div class="service-card glass" data-service="farm-gem">
+            <span class="svc-status-chip status-available">AVAILABLE</span>
             <div class="card-icon">💎</div>
             <h3>ฟาร์มเจม</h3>
             <p>รับฟาร์ม Primogem, Mora และทรัพยากรหลัก</p>
             <button class="btn-service">เลือกบริการ</button>
           </div>
           <div class="service-card glass" data-service="abyss">
+            <span class="svc-status-chip status-available">AVAILABLE</span>
             <div class="card-icon">⚔️</div>
             <h3>เคลียร์ Abyss</h3>
             <p>ช่วยเคลียร์ Spiral Abyss ทุกชั้น</p>
             <button class="btn-service">เลือกบริการ</button>
           </div>
           <div class="service-card glass" data-service="explore">
+            <span class="svc-status-chip status-available">AVAILABLE</span>
             <div class="card-icon">🗺️</div>
             <h3>สำรวจแผนที่</h3>
             <p>เปิดแผนที่ 100% + เก็บของหายาก</p>
             <button class="btn-service">เลือกบริการ</button>
           </div>
           <div class="service-card glass" data-service="oculus">
+            <span class="svc-status-chip status-available">AVAILABLE</span>
             <div class="card-icon">🔮</div>
             <h3>เก็บ Oculus / อัปเสา</h3>
             <p>เก็บลูกแก้วอัพเสาเมืองทุกชนิด ตามจำนวนที่เหลือ</p>
             <button class="btn-service">เลือกบริการ</button>
           </div>
           <div class="service-card glass service-card-disabled" data-service="id-care" aria-disabled="true">
+            <span class="svc-status-chip status-soon">SOON</span>
             <div class="coming-soon-badge">เร็ว ๆ นี้</div>
             <div class="card-icon">🛡️</div>
             <h3>ดูแลไอดี</h3>
@@ -197,6 +233,7 @@
             <button class="btn-service" type="button" disabled>ยังไม่เปิดใช้งาน</button>
           </div>
           <div class="service-card glass service-card-disabled" data-service="quest" aria-disabled="true">
+            <span class="svc-status-chip status-soon">SOON</span>
             <div class="coming-soon-badge">เร็ว ๆ นี้</div>
             <div class="card-icon">📜</div>
             <h3>เล่นเควส</h3>
@@ -204,6 +241,7 @@
             <button class="btn-service" type="button" disabled>ยังไม่เปิดใช้งาน</button>
           </div>
           <div class="service-card glass service-card-disabled" data-service="event" aria-disabled="true">
+            <span class="svc-status-chip status-soon">SOON</span>
             <div class="coming-soon-badge">เร็ว ๆ นี้</div>
             <div class="card-icon">🎉</div>
             <h3>กิจกรรม</h3>
@@ -1259,6 +1297,13 @@
             <p class="queue-kicker">Live Queue</p>
             <h2>คิวออเดอร์</h2>
             <p>ตารางคิวสาธารณะ — ดูสถานะได้ทุกคน · ภาพแนบของลูกค้าไม่แสดงในหน้านี้</p>
+            <div class="queue-step-legend" aria-label="ลำดับสถานะออเดอร์">
+              <span class="qstep" data-step="pending"><i></i>รอ</span>
+              <span class="qstep-arrow" aria-hidden="true">→</span>
+              <span class="qstep" data-step="doing"><i></i>กำลังทำ</span>
+              <span class="qstep-arrow" aria-hidden="true">→</span>
+              <span class="qstep" data-step="done"><i></i>เสร็จ</span>
+            </div>
           </div>
           <div class="queue-hero-actions">
             <div class="queue-count-pill">
