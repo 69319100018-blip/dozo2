@@ -4250,3 +4250,224 @@ body {
   -webkit-background-clip: border-box;
   background-clip: border-box;
 }
+
+/* ========== ENHANCED ANIMATIONS: SHIMMER + ATOM ORBITS ========== */
+
+@keyframes textShimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes atomOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes atomOrbitReverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes softGlowPulse {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(213, 183, 125, 0.35), 0 0 40px rgba(169, 154, 255, 0.15);
+    filter: brightness(1);
+  }
+  50% {
+    text-shadow: 0 0 32px rgba(240, 201, 135, 0.55), 0 0 60px rgba(169, 154, 255, 0.28);
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes monogramGlow {
+  0%, 100% {
+    box-shadow: 0 5px 18px rgba(213, 183, 125, 0.17), 0 0 0 0 rgba(213, 183, 125, 0);
+  }
+  50% {
+    box-shadow: 0 5px 22px rgba(213, 183, 125, 0.35), 0 0 18px 2px rgba(213, 183, 125, 0.25);
+  }
+}
+
+@keyframes introRingSpin {
+  from { transform: rotate(0deg) scale(1); opacity: 0.65; }
+  50% { transform: rotate(180deg) scale(1.08); opacity: 0.35; }
+  to { transform: rotate(360deg) scale(1); opacity: 0.65; }
+}
+
+/* --- Hero Emblem: atom-style spinning orbits --- */
+.hero-emblem {
+  overflow: visible;
+}
+
+/* Elliptical rings keep their tilt and spin around the D like atomic orbitals.
+   Using composite rotate + scale so the ring stays elliptical while orbiting. */
+@keyframes orbitOneSpin {
+  0%   { transform: rotate(0deg) scaleY(0.74) rotate(32deg); }
+  100% { transform: rotate(360deg) scaleY(0.74) rotate(32deg); }
+}
+@keyframes orbitTwoSpin {
+  0%   { transform: rotate(0deg) scaleY(0.74) rotate(-32deg); }
+  100% { transform: rotate(-360deg) scaleY(0.74) rotate(-32deg); }
+}
+@keyframes pseudoOrbitA {
+  0%   { transform: rotate(0deg) scaleX(0.72) rotate(28deg); }
+  100% { transform: rotate(360deg) scaleX(0.72) rotate(28deg); }
+}
+@keyframes pseudoOrbitB {
+  0%   { transform: rotate(0deg) scaleX(0.72) rotate(-28deg); }
+  100% { transform: rotate(-360deg) scaleX(0.72) rotate(-28deg); }
+}
+
+.hero-emblem::before {
+  animation: pseudoOrbitA 22s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+.hero-emblem::after {
+  animation: pseudoOrbitB 28s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.hero-emblem-orbit.orbit-one {
+  animation: orbitOneSpin 14s linear infinite;
+  transform-origin: center center;
+  border-color: rgba(213, 183, 125, 0.4);
+  box-shadow: 0 0 14px rgba(213, 183, 125, 0.18);
+  will-change: transform;
+}
+.hero-emblem-orbit.orbit-two {
+  animation: orbitTwoSpin 19s linear infinite;
+  transform-origin: center center;
+  border-color: rgba(169, 154, 255, 0.45);
+  box-shadow: 0 0 14px rgba(169, 154, 255, 0.2);
+  will-change: transform;
+}
+
+/* Glowing letter D — shimmer + soft pulse */
+.hero-emblem-letter {
+  background: linear-gradient(
+    110deg,
+    #e8d4a8 0%,
+    #fff8e7 25%,
+    #f0c987 45%,
+    #d5b77d 55%,
+    #c4b0ff 75%,
+    #e8d4a8 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: softGlowPulse 3.6s ease-in-out infinite, textShimmer 5.5s linear infinite;
+}
+
+/* Caption subtle shimmer */
+.hero-emblem-caption {
+  background: linear-gradient(90deg, #a69abf, #e8d4a8, #a69abf, #c4b0ff, #a69abf);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 7s linear infinite;
+}
+
+/* --- Brand wordmark shimmer (header) --- */
+.brand .brand-wordmark > span,
+.brand-wordmark > span {
+  background: linear-gradient(
+    110deg,
+    #f1d9a7 0%,
+    #fff6e0 22%,
+    #f1d9a7 40%,
+    #bba7ff 55%,
+    #f1d9a7 70%,
+    #fff6e0 88%,
+    #f1d9a7 100%
+  ) !important;
+  background-size: 220% auto !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  animation: textShimmer 6s linear infinite;
+}
+
+/* Optional soft shimmer on whole brand if desired — currently only Genshin span */
+
+/* Brand monogram glow pulse */
+.brand-monogram,
+.brand > .brand-monogram {
+  animation: monogramGlow 3.2s ease-in-out infinite;
+  position: relative;
+}
+
+/* --- Intro screen enhancements --- */
+.intro-title span {
+  background: linear-gradient(
+    110deg,
+    var(--gold) 0%,
+    #fff6e0 30%,
+    var(--gold) 50%,
+    #c4b0ff 70%,
+    var(--gold) 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 5s linear infinite;
+}
+
+.avatar-text {
+  background: linear-gradient(
+    135deg,
+    #d5b77d 0%,
+    #fff6e0 35%,
+    #f0c987 55%,
+    #c4b0ff 80%,
+    #d5b77d 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 4.5s linear infinite, softGlowPulse 3.8s ease-in-out infinite;
+}
+
+.intro-ring {
+  animation: introRingSpin 8s linear infinite;
+  border-color: rgba(213, 183, 125, 0.45);
+}
+
+.intro-ring.ring-2 {
+  animation: introRingSpin 11s linear infinite reverse;
+  animation-delay: 0.4s;
+  border-color: rgba(169, 154, 255, 0.35);
+}
+
+/* Hero eyebrow live dot already exists — enhance pulse if needed */
+.hero-live-dot {
+  animation: softGlowPulse 2s ease-in-out infinite;
+}
+
+/* Service cards subtle lift on hover already present — add gentle entrance if desired */
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .hero-emblem::before,
+  .hero-emblem::after,
+  .hero-emblem-orbit,
+  .hero-emblem-letter,
+  .hero-emblem-caption,
+  .brand-wordmark > span,
+  .brand-monogram,
+  .intro-title span,
+  .avatar-text,
+  .intro-ring,
+  .intro-ring.ring-2,
+  .hero-live-dot {
+    animation: none !important;
+  }
+}
