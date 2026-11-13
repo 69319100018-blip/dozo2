@@ -4790,3 +4790,417 @@ body {
     gap: 0.55rem;
   }
 }
+
+/* ========== PHASE A–C: PREMIUM POLISH (8 improvements) ========== */
+
+/* --- 1) Service status chips --- */
+.service-card {
+  position: relative;
+}
+.svc-status-chip {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 2;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  font: 800 0.48rem/1 "DM Sans", sans-serif;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+.svc-status-chip.status-available {
+  border: 1px solid rgba(110, 231, 183, 0.28);
+  background: rgba(110, 231, 183, 0.1);
+  color: #9bdcba;
+  box-shadow: 0 0 12px rgba(110, 231, 183, 0.12);
+}
+.svc-status-chip.status-soon {
+  border: 1px solid rgba(213, 183, 125, 0.28);
+  background: rgba(213, 183, 125, 0.1);
+  color: #e0c48a;
+}
+/* Hide old AVAILABLE pseudo if present to avoid double labels */
+.service-card:not(.service-card-disabled)::after {
+  content: none !important;
+}
+
+/* --- 2) Micro-interactions: cards & buttons --- */
+.service-card {
+  transition:
+    transform 0.35s var(--bounce),
+    border-color 0.3s ease,
+    box-shadow 0.35s ease,
+    background 0.35s ease;
+}
+.service-card:not(.service-card-disabled):hover {
+  transform: translateY(-4px);
+  border-color: rgba(213, 183, 125, 0.48);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(213, 183, 125, 0.12),
+    0 0 28px rgba(213, 183, 125, 0.1);
+}
+.btn-service {
+  transition:
+    transform 0.28s var(--bounce),
+    background 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease,
+    color 0.28s ease;
+}
+.btn-service:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(213, 183, 125, 0.22);
+}
+.btn-service:not(:disabled):active {
+  transform: translateY(0);
+}
+.nav-item {
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+.nav-item:hover:not(.active) {
+  box-shadow: inset 0 0 0 1px rgba(213, 183, 125, 0.18);
+}
+
+/* --- 3) Section ornament (Genshin-style divider) --- */
+.section-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0.15rem;
+  padding: 0 0.5rem;
+}
+.section-ornament .ornament-line {
+  flex: 1;
+  max-width: 140px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(213, 183, 125, 0.45),
+    transparent
+  );
+}
+.section-ornament .ornament-gem {
+  color: var(--gold);
+  font-size: 0.7rem;
+  opacity: 0.85;
+  text-shadow: 0 0 12px rgba(213, 183, 125, 0.45);
+  animation: softGlowPulse 4s ease-in-out infinite;
+}
+
+/* --- 4) Trust row under hero --- */
+.trust-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1.15rem;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(145deg, rgba(20, 26, 44, 0.72), rgba(12, 16, 28, 0.55));
+  transition: border-color 0.3s ease, transform 0.3s var(--bounce), box-shadow 0.3s ease;
+}
+.trust-item:hover {
+  border-color: rgba(213, 183, 125, 0.32);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.trust-icon {
+  flex-shrink: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(213, 183, 125, 0.14), rgba(169, 154, 255, 0.08));
+  border: 1px solid rgba(213, 183, 125, 0.2);
+  font-size: 1rem;
+}
+.trust-item strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: #f0ebe3;
+  margin-bottom: 0.1rem;
+}
+.trust-item p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* --- 5) Sticky glass header on scroll --- */
+.dash-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    backdrop-filter 0.35s ease;
+  backdrop-filter: blur(16px) saturate(1.25);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+}
+.dash-header.is-scrolled {
+  background: rgba(8, 10, 18, 0.88);
+  border-bottom-color: rgba(213, 183, 125, 0.22);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(213, 183, 125, 0.06);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+}
+
+/* --- 6) Empty / loading states --- */
+.empty-state-rich,
+.empty-cell-rich {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 2.4rem 1.2rem !important;
+  text-align: center;
+}
+.empty-emblem {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.55rem;
+  display: grid;
+  place-items: center;
+}
+.empty-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(213, 183, 125, 0.35);
+  animation: atomOrbit 8s linear infinite;
+}
+.empty-letter {
+  font: 600 1.35rem/1 "DM Sans", sans-serif;
+  color: #eed7aa;
+  text-shadow: 0 0 18px rgba(213, 183, 125, 0.4);
+}
+.empty-emblem.is-loading .empty-orbit {
+  animation-duration: 2.2s;
+  border-color: rgba(169, 154, 255, 0.45);
+  box-shadow: 0 0 16px rgba(169, 154, 255, 0.2);
+}
+.empty-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e8e4dc;
+}
+.empty-sub {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 320px;
+  line-height: 1.5;
+}
+.empty-state-rich .empty-title { margin-top: 0.15rem; }
+
+/* Skeleton pulse utility */
+.skeleton-pulse {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: textShimmer 1.4s linear infinite;
+  border-radius: 8px;
+}
+
+/* --- 7) Order queue step visual --- */
+.queue-step-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  margin-top: 0.95rem;
+}
+.qstep {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #a8afbe;
+}
+.qstep i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
+.qstep[data-step="pending"] i { background: #e0c48a; box-shadow: 0 0 0 3px rgba(213, 183, 125, 0.15); }
+.qstep[data-step="doing"] i { background: #b8a8ff; box-shadow: 0 0 0 3px rgba(169, 154, 255, 0.18); }
+.qstep[data-step="done"] i { background: #7ddbb0; box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.15); }
+.qstep-arrow {
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 0.75rem;
+}
+
+/* Status badge with step dots */
+.status-badge.status-with-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem 0.28rem 0.45rem;
+}
+.status-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.status-dot.is-done {
+  background: rgba(110, 231, 183, 0.75);
+}
+.status-dot.is-current {
+  background: currentColor;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  transform: scale(1.15);
+}
+.status-pending .status-dot.is-current { background: #e0c48a; }
+.status-doing .status-dot.is-current { background: #c2b8ff; }
+.status-done .status-dot.is-current,
+.status-done .status-dot.is-done { background: #8de0b6; }
+
+/* Row tint by status */
+.queue-row.status-row-pending td:first-child {
+  box-shadow: inset 3px 0 0 rgba(213, 183, 125, 0.55);
+}
+.queue-row.status-row-doing td:first-child {
+  box-shadow: inset 3px 0 0 rgba(169, 154, 255, 0.6);
+}
+.queue-row.status-row-done td:first-child {
+  box-shadow: inset 3px 0 0 rgba(110, 231, 183, 0.55);
+}
+.queue-row.status-row-cancel td:first-child {
+  box-shadow: inset 3px 0 0 rgba(251, 113, 133, 0.45);
+}
+
+/* --- 8) Ambient glow behind hero / cards --- */
+.welcome-section.home-hero,
+.home-hero {
+  position: relative;
+  isolation: isolate;
+}
+.welcome-section.home-hero::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: min(420px, 55vw);
+  height: min(420px, 55vw);
+  right: -8%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(213, 183, 125, 0.14) 0%,
+    rgba(169, 154, 255, 0.08) 38%,
+    transparent 68%
+  );
+  pointer-events: none;
+  filter: blur(2px);
+}
+.hero-content,
+.hero-emblem {
+  position: relative;
+  z-index: 1;
+}
+.service-card::before {
+  opacity: 0.9;
+}
+.services-grid {
+  position: relative;
+}
+.services-grid::before {
+  content: "";
+  position: absolute;
+  inset: 10% 5% auto;
+  height: 60%;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(169, 154, 255, 0.05),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.service-card {
+  z-index: 1;
+}
+
+/* Membership slight lift */
+.membership-promo {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.membership-promo:hover {
+  border-color: rgba(213, 183, 125, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), 0 0 24px rgba(213, 183, 125, 0.06);
+}
+
+/* Responsive trust + chips */
+@media (max-width: 900px) {
+  .trust-row {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+  .trust-item {
+    padding: 0.75rem 0.9rem;
+  }
+}
+@media (max-width: 700px) {
+  .section-ornament .ornament-line {
+    max-width: 72px;
+  }
+  .queue-step-legend {
+    margin-top: 0.7rem;
+  }
+  .svc-status-chip {
+    top: 0.65rem;
+    right: 0.65rem;
+    font-size: 0.42rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section-ornament .ornament-gem,
+  .empty-orbit,
+  .empty-emblem.is-loading .empty-orbit,
+  .skeleton-pulse {
+    animation: none !important;
+  }
+  .service-card:not(.service-card-disabled):hover,
+  .btn-service:not(:disabled):hover,
+  .trust-item:hover {
+    transform: none;
+  }
+}
