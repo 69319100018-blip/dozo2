@@ -180,3 +180,55 @@ async function handleOrderError(error) {
   alert(error?.message || "บันทึกคำสั่งซื้อไม่สำเร็จ กรุณาลองใหม่");
 }
 
+function bindImageUpload({ inputId, areaId, placeholderId, previewId, errorId, onChange }) {
+  const input = document.getElementById(inputId);
+  const area = document.getElementById(areaId);
+  const placeholder = document.getElementById(placeholderId);
+  const preview = document.getElementById(previewId);
+  const error = document.getElementById(errorId);
+  if (!input || !area) return;
+
+  function handle(file) {
+    if (!file) return;
+    if (!file.size || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      onChange(false, null);
+      if (preview?.dataset.objectUrl) {
+        URL.revokeObjectURL(preview.dataset.objectUrl);
+        delete preview.dataset.objectUrl;
+      }
+      if (preview) preview.src = "";
+      preview?.classList.add("hidden");
+      if (placeholder) placeholder.style.display = "block";
+      if (error) {
+        error.textContent = file.size
+          ? "รองรับเฉพาะไฟล์ JPG, PNG และ WEBP"
+          : "ไฟล์ภาพว่างเปล่าหรืออ่านไม่ได้";
+        error.classList.add("show");
+      }
+      return;
+    }
+
+    if (preview) {
+      if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+      preview.dataset.objectUrl = URL.createObjectURL(file);
+      preview.src = preview.dataset.objectUrl;
+      preview.classList.remove("hidden");
+    }
+    if (placeholder) placeholder.style.display = "none";
+    onChange(true, file);
+    if (error) {
+      error.textContent = "ต้องอัปโหลดภาพก่อนจึงจะกดสั่งซื้อได้";
+      error.classList.remove("show");
+    }
+  }
+
+  input.addEventListener("change", (e) => handle(e.target.files[0]));
+  area.addEventListener("dragover", (e) => { e.preventDefault(); area.classList.add("dragover"); });
+  area.addEventListener("dragleave", () => area.classList.remove("dragover"));
+  area.addEventListener("drop", (e) => {
+    e.preventDefault();
+    area.classList.remove("dragover");
+    if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]);
+  });
+}
+
