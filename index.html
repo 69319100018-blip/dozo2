@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dozo Genshin | รับงานฟาร์ม & วัสดุ</title>
+  <meta name="description" content="Dozo Genshin — บริการฟาร์ม Primogem เคลียร์ Abyss สำรวจแผนที่ และบริการสำหรับนักเดินทาง" />
+  <meta name="theme-color" content="#080a12" />
+  <meta name="color-scheme" content="dark" />
+  <title>Dozo Genshin | Premium Adventure Support</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -88,9 +94,10 @@
   <div id="dashboard-screen" class="screen">
     <header class="dash-header glass">
       <div class="header-left">
-        <h1 class="brand">Dozo <span>Genshin</span></h1>
+        <h1 class="brand"><span class="brand-monogram" aria-hidden="true">D</span><span class="brand-wordmark">Dozo <span>Genshin</span></span></h1>
+        <span class="brand-caption">PREMIUM ADVENTURE SUPPORT</span>
       </div>
-      <nav class="navbar" id="main-nav">
+      <nav class="navbar" id="main-nav" aria-label="เมนูหลัก">
         <!-- ลูกค้า -->
         <button class="nav-item customer-only active" data-view="home">หน้าหลัก</button>
         <button class="nav-item customer-only" data-view="history">คิวออเดอร์</button>
@@ -111,9 +118,23 @@
     <main class="dash-main">
       <!-- ===== HOME VIEW ===== -->
       <div id="view-home" class="view active">
-        <section class="welcome-section">
-          <h2>สวัสดี, <span id="display-name">นักเดินทาง</span></h2>
-          <p>เลือกบริการที่ต้องการด้านล่างได้เลย</p>
+        <section class="welcome-section home-hero">
+          <div class="hero-content">
+            <span class="hero-eyebrow"><span class="hero-live-dot" aria-hidden="true"></span> PREMIUM SERVICE FOR TRAVELERS</span>
+            <h2>สวัสดี, <span id="display-name">นักเดินทาง</span></h2>
+            <p>ให้การผจญภัยของคุณก้าวต่อไปได้ง่ายขึ้น ด้วยบริการช่วยเหลือจากทีม Dozo</p>
+            <div class="hero-highlights" aria-label="จุดเด่นบริการ">
+              <span><i aria-hidden="true">✦</i> เลือกบริการได้ง่าย</span>
+              <span><i aria-hidden="true">✦</i> ติดตามคิวงานได้</span>
+              <span><i aria-hidden="true">✦</i> ดูแลโดยทีมงาน</span>
+            </div>
+          </div>
+          <div class="hero-emblem" aria-hidden="true">
+            <span class="hero-emblem-orbit orbit-one"></span>
+            <span class="hero-emblem-orbit orbit-two"></span>
+            <span class="hero-emblem-letter">D</span>
+            <span class="hero-emblem-caption">DOZO / GENSHIN</span>
+          </div>
         </section>
 
         <!-- โปรโมชันสมัครสมาชิก (ลูกค้าทั่วไป) — แจ้งผ่านแชท แอดมินเปลี่ยน role ทีหลัง -->
@@ -134,7 +155,16 @@
           </div>
         </section>
 
-        <section class="services-grid">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">EXPLORE OUR SERVICES</span>
+            <h3>เลือกบริการที่เหมาะกับคุณ</h3>
+            <p>รายละเอียดและราคาจะแสดงในขั้นตอนการสั่งซื้อ</p>
+          </div>
+          <span class="section-heading-mark" aria-hidden="true">DOZO <b>✦</b></span>
+        </div>
+
+        <section class="services-grid" aria-label="บริการของ Dozo Genshin">
           <div class="service-card glass" data-service="farm-gem">
             <div class="card-icon">💎</div>
             <h3>ฟาร์มเจม</h3>
@@ -1298,6 +1328,7 @@
       <!-- ===== CONTACT VIEW ===== -->
       <div id="view-contact" class="view">
         <section class="welcome-section">
+          <span class="hero-eyebrow">WE ARE HERE TO HELP</span>
           <h2>ติดต่อเรา</h2>
           <p>สอบถามงาน ประสานออเดอร์ หรือแจ้งปัญหาหลังสั่งซื้อ</p>
         </section>
@@ -1348,6 +1379,7 @@
       <div id="view-staff" class="view">
         <section class="welcome-section staff-hero">
           <div>
+            <span class="hero-eyebrow">STAFF WORKSPACE</span>
             <h2>งานของฉัน</h2>
             <p>แสดงเฉพาะงานที่แอดมินส่งมอบให้คุณแล้ว — ก่อนถูกมอบหมายจะยังไม่เห็นรายการ</p>
           </div>
@@ -1370,6 +1402,7 @@
       <div id="view-admin" class="view">
         <section class="welcome-section admin-hero">
           <div>
+            <span class="hero-eyebrow">DOZO CONTROL CENTER</span>
             <h2>แผงควบคุมแอดมิน</h2>
             <p>จัดการออเดอร์ มอบหมายงานให้ลูกทีม และดูแลสมาชิก — แยกจากหน้าสั่งซื้อของลูกค้า</p>
           </div>
