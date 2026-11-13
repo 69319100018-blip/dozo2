@@ -85,8 +85,6 @@ let selectedExplore = null;
 let selectedExplorePercent = null;
 let selectedExploreAreaCount = null;
 let hasExploreSlip = false;
-let hasExploreMap = false;
-let selectedExploreMapFile = null;
 let exploreQrGenerated = false;
 let lastExploreQrAmount = null;
 

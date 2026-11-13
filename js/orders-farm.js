@@ -7,8 +7,6 @@ function renderPackages() {
   selectedPackage = null;
   hasSlip = false;
   selectedFarmSlipFile = null;
-  hasFarmMap = false;
-  selectedFarmMapFile = null;
   if (slipUpload) slipUpload.value = "";
   if (slipPreview?.dataset.objectUrl) {
     URL.revokeObjectURL(slipPreview.dataset.objectUrl);
@@ -17,19 +15,8 @@ function renderPackages() {
   if (slipPreview) slipPreview.src = "";
   slipPreview?.classList.add("hidden");
   if (uploadPlaceholder) uploadPlaceholder.style.display = "block";
-  const farmMapPreview = document.getElementById("farm-map-preview");
-  const farmMapPlaceholder = document.getElementById("farm-map-placeholder");
-  const farmMapInput = document.getElementById("farm-map-upload");
-  if (farmMapPreview) {
-    if (farmMapPreview.dataset.objectUrl) {
-      URL.revokeObjectURL(farmMapPreview.dataset.objectUrl);
-      delete farmMapPreview.dataset.objectUrl;
-    }
-    farmMapPreview.src = "";
-    farmMapPreview.classList.add("hidden");
-  }
-  if (farmMapPlaceholder) farmMapPlaceholder.style.display = "block";
-  if (farmMapInput) farmMapInput.value = "";
+  const farmMapDrive = document.getElementById("farm-map-drive");
+  if (farmMapDrive) farmMapDrive.value = "";
   document.getElementById("farm-map-error")?.classList.remove("show");
   updateTotal();
   updateSubmitState();
@@ -344,17 +331,19 @@ uploadArea?.addEventListener("drop", (e) => {
   if (file) handleSlipFile(file);
 });
 
-bindImageUpload({
-  inputId: "farm-map-upload",
-  areaId: "farm-map-area",
-  placeholderId: "farm-map-placeholder",
-  previewId: "farm-map-preview",
-  errorId: "farm-map-error",
-  onChange: (ok, file) => { selectedFarmMapFile = file || null; hasFarmMap = ok; updateSubmitState(); }
+const farmMapDriveInput = document.getElementById("farm-map-drive");
+farmMapDriveInput?.addEventListener("input", () => {
+  document.getElementById("farm-map-error")?.classList.remove("show");
+  updateSubmitState();
 });
 
+function getFarmMapDriveUrl() {
+  return (document.getElementById("farm-map-drive")?.value || "").trim();
+}
+
 function updateSubmitState() {
-  const canSubmit = !!selectedPackage && hasFarmMap && hasSlip;
+  const hasMapLink = isValidGoogleDriveUrl(getFarmMapDriveUrl());
+  const canSubmit = !!selectedPackage && hasMapLink && hasSlip;
   btnSubmitOrder.disabled = !canSubmit;
 }
 
@@ -383,7 +372,11 @@ function validateGameAccount(account) {
 farmForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!selectedPackage) { alert("กรุณาเลือกจำนวนเจม"); return; }
-  if (!hasFarmMap || !selectedFarmMapFile) { document.getElementById("farm-map-error")?.classList.add("show"); return; }
+  const mapDriveUrl = getFarmMapDriveUrl();
+  if (!isValidGoogleDriveUrl(mapDriveUrl)) {
+    document.getElementById("farm-map-error")?.classList.add("show");
+    return;
+  }
   if (!hasSlip || !selectedFarmSlipFile) { slipError.classList.add("show"); return; }
 
   const account = readGameAccount("farm");
@@ -411,6 +404,7 @@ farmForm?.addEventListener("submit", async (e) => {
     loginId: account.loginId,
     gamePass: account.pass,
     ar: account.ar,
+    mapDriveUrl,
   };
 
   btnSubmitOrder.disabled = true;
@@ -422,9 +416,7 @@ farmForm?.addEventListener("submit", async (e) => {
       facebookName,
       details
     }, {
-      slipFile: selectedFarmSlipFile,
-      attachmentFile: selectedFarmMapFile,
-      attachmentPurpose: "map_screenshot"
+      slipFile: selectedFarmSlipFile
     });
 
     goToQueueAfterOrder({

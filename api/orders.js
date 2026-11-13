@@ -66,6 +66,20 @@ function validateUploadPath(pathname, userId) {
   return isValidOrderUploadPath(pathname, userId || null);
 }
 
+function cleanGoogleDriveUrl(value) {
+  const t = cleanText(value, 500);
+  if (!t) return null;
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+    const host = u.hostname.replace(/^www\./, "");
+    if (host !== "drive.google.com" && host !== "docs.google.com") return null;
+    return t;
+  } catch {
+    return null;
+  }
+}
+
 function buildDetails(service, raw, userRole = "customer") {
   const d = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const details = {
@@ -86,6 +100,8 @@ function buildDetails(service, raw, userRole = "customer") {
     const gems = Number(d.gems);
     const priceMap = getFarmPriceMap(userRole);
     if (!priceMap.has(gems)) throw new Error("แพ็กเกจเจมไม่ถูกต้อง");
+    const mapDriveUrl = cleanGoogleDriveUrl(d.mapDriveUrl || d.mapDriveLink);
+    if (!mapDriveUrl) throw new Error("กรุณาวางลิงก์ Google Drive ที่รวมภาพแมพ");
     const rush = d.rush === true;
     const noDailyGems = d.noDailyGems === true;
     const noAbyssTheaterGems = d.noAbyssTheaterGems === true;
@@ -114,6 +130,7 @@ function buildDetails(service, raw, userRole = "customer") {
         authMethod,
         extraFees: extra,
         memberPrice: isMemberRole(userRole),
+        mapDriveUrl,
       },
       totalPrice: total,
       summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${extraBits.length ? ` · ${extraBits.join(" · ")}` : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""} · ${total}฿`,
@@ -220,6 +237,8 @@ function buildDetails(service, raw, userRole = "customer") {
     const total = areaCount * percent * 2;
     const detail = cleanText(d.detail, 1500);
     const label = packageName || packageId;
+    const mapDriveUrl = cleanGoogleDriveUrl(d.mapDriveUrl || d.mapDriveLink);
+    if (!mapDriveUrl) throw new Error("กรุณาวางลิงก์ Google Drive ที่รวมภาพแมพ");
     return {
       details: {
         ...details,
@@ -230,6 +249,7 @@ function buildDetails(service, raw, userRole = "customer") {
         areaMax: maxAreas,
         percent,
         detail,
+        mapDriveUrl,
       },
       totalPrice: total,
       summary: `${label} ${areaCount}/${maxAreas} พื้นที่ · ${percent}% · ${total}฿`,
@@ -431,13 +451,11 @@ async function handler(request) {
       if (service === "material" && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "กรุณาอัปโหลดภาพวัสดุใหม่" }, 400);
       }
-      if ((service === "explore" || service === "farm-gem") && !validateUploadPath(attachmentPath, userId)) {
-        return json({ error: "กรุณาอัปโหลดภาพแมพเพื่อตรวจสอบพื้นที่" }, 400);
-      }
+      // farm-gem / explore ใช้ลิงก์ Google Drive ใน details.mapDriveUrl แทนการอัปโหลดภาพ
       if (service === "build-char" && attachmentPath && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
-      if (attachmentPath && !validateUploadPath(attachmentPath, userId)) {
+      if (attachmentPath && service !== "farm-gem" && service !== "explore" && !validateUploadPath(attachmentPath, userId)) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
 
@@ -459,17 +477,21 @@ async function handler(request) {
 
       // แจ้งเตือน LINE + Discord (ไม่บล็อกการสร้างออเดอร์ถ้าส่งไม่สำเร็จ)
       try {
-        const attachmentLabel =
-          service === "farm-gem" || service === "explore"
-            ? "ดูภาพแมพ"
-            : service === "material"
-              ? "ดูภาพวัสดุ"
-              : service === "build-char"
-                ? "ดูภาพตัวละคร"
-                : "ดูภาพแนบ";
-        const attachmentViewUrl = attachmentPath
-          ? buildAttachmentViewUrl(request, attachmentPath)
-          : null;
+        const mapDriveUrl =
+          (normalized.details && (normalized.details.mapDriveUrl || normalized.details.mapDriveLink)) || null;
+        const isMapService = service === "farm-gem" || service === "explore";
+        const attachmentLabel = isMapService
+          ? "ดูแมพ (Google Drive)"
+          : service === "material"
+            ? "ดูภาพวัสดุ"
+            : service === "build-char"
+              ? "ดูภาพตัวละคร"
+              : "ดูภาพแนบ";
+        const attachmentViewUrl = isMapService && mapDriveUrl
+          ? mapDriveUrl
+          : attachmentPath
+            ? buildAttachmentViewUrl(request, attachmentPath)
+            : null;
 
         await notifyNewOrderAll({
           orderNumber: order.orderNumber,
@@ -482,7 +504,7 @@ async function handler(request) {
           totalPrice: order.totalPrice,
           attachmentViewUrl,
           attachmentLabel,
-          attachmentPath,
+          attachmentPath: isMapService ? null : attachmentPath,
         });
       } catch (notifyError) {
         console.error("[notify] notifyNewOrderAll failed", notifyError);

@@ -13,6 +13,26 @@ function privateFileLink(pathname, label) {
   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
 }
 
+function externalLinkHtml(url, label) {
+  if (!url) return "";
+  return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+}
+
+/** ตรวจว่าเป็นลิงก์ Google Drive / Docs ที่ใช้ได้ */
+function isValidGoogleDriveUrl(value) {
+  if (!value || typeof value !== "string") return false;
+  const t = value.trim();
+  if (t.length < 20 || t.length > 500) return false;
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+    const host = u.hostname.replace(/^www\./, "");
+    return host === "drive.google.com" || host === "docs.google.com";
+  } catch {
+    return false;
+  }
+}
+
 function attachmentLabelForService(service) {
   if (service === "explore" || service === "farm-gem") return "ดูภาพแมพ";
   if (service === "build-char") return "ดูภาพตัวละคร";
@@ -21,9 +41,13 @@ function attachmentLabelForService(service) {
 }
 
 function orderFilesHtml(o) {
+  const d = o?.details && typeof o.details === "object" ? o.details : {};
+  const mapDrive = d.mapDriveUrl || d.mapDriveLink || null;
   return [
     privateFileLink(o.slipPath, "ดูสลิป"),
-    privateFileLink(o.attachmentPath, attachmentLabelForService(o.service)),
+    mapDrive
+      ? externalLinkHtml(mapDrive, "ดูแมพ (Google Drive)")
+      : privateFileLink(o.attachmentPath, attachmentLabelForService(o.service)),
   ].filter(Boolean).join(" · ");
 }
 
@@ -84,6 +108,9 @@ function formatOrderDetailsHtml(o) {
       detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
       detailRow("ข้อห้าม", d.prohibitions),
       detailRow("ค่าบริการเพิ่ม", d.extraFees ? `${d.extraFees}฿` : null),
+      d.mapDriveUrl
+        ? `<div class="detail-row"><span class="detail-label">แมพ (Drive)</span><span class="detail-value">${externalLinkHtml(d.mapDriveUrl, "เปิด Google Drive")}</span></div>`
+        : "",
       detailRow("ราคาสมาชิก", d.memberPrice ? "ใช่" : null),
     ].filter(Boolean).join("");
     if (farmRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียดฟาร์มเจม</div>${farmRows}</div>`);
@@ -124,6 +151,9 @@ function formatOrderDetailsHtml(o) {
       detailRow("รายละเอียดเพิ่ม", d.detail || d.note),
       detailRow("ข้อห้าม", d.prohibitions),
       detailRow("ถ่ายทอดสด", d.stream === "yes" ? "ต้องการ" : d.stream === "no" ? "ไม่ต้องการ" : null),
+      d.mapDriveUrl
+        ? `<div class="detail-row"><span class="detail-label">แมพ (Drive)</span><span class="detail-value">${externalLinkHtml(d.mapDriveUrl, "เปิด Google Drive")}</span></div>`
+        : "",
     ].filter(Boolean).join("");
     if (exploreRows) parts.push(`<div class="detail-section"><div class="detail-section-title">รายละเอียดสำรวจแผนที่</div>${exploreRows}</div>`);
   } else if (service === "oculus") {

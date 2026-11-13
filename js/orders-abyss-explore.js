@@ -265,17 +265,8 @@ function renderExploreOptions() {
   selectedExploreAreaCount = null;
   hasExploreSlip = false;
   selectedExploreSlipFile = null;
-  hasExploreMap = false;
-  selectedExploreMapFile = null;
-  const mapPreview = document.getElementById("explore-map-preview");
-  const mapPlaceholder = document.getElementById("explore-map-placeholder");
-  const mapInput = document.getElementById("explore-map-upload");
-  if (mapPreview) {
-    mapPreview.src = "";
-    mapPreview.classList.add("hidden");
-  }
-  if (mapPlaceholder) mapPlaceholder.style.display = "block";
-  if (mapInput) mapInput.value = "";
+  const exploreMapDrive = document.getElementById("explore-map-drive");
+  if (exploreMapDrive) exploreMapDrive.value = "";
   document.getElementById("explore-map-error")?.classList.remove("show");
   document.querySelectorAll("#explore-percent-grid .percent-item").forEach((b) => b.classList.remove("selected"));
   renderExploreAreaCountButtons();
@@ -297,9 +288,14 @@ function renderExploreOptions() {
 function updateAbyssSubmitState() {
   if (btnSubmitAbyss) btnSubmitAbyss.disabled = !(selectedAbyss && hasAbyssSlip);
 }
+function getExploreMapDriveUrl() {
+  return (document.getElementById("explore-map-drive")?.value || "").trim();
+}
+
 function updateExploreSubmitState() {
   if (btnSubmitExplore) {
-    btnSubmitExplore.disabled = !(selectedExplore && selectedExploreAreaCount && selectedExplorePercent && hasExploreMap && hasExploreSlip);
+    const hasMapLink = isValidGoogleDriveUrl(getExploreMapDriveUrl());
+    btnSubmitExplore.disabled = !(selectedExplore && selectedExploreAreaCount && selectedExplorePercent && hasMapLink && hasExploreSlip);
   }
 }
 
@@ -332,13 +328,9 @@ bindImageUpload({
   onChange: (ok, file) => { selectedExploreSlipFile = file || null; hasExploreSlip = ok; updateExploreSubmitState(); }
 });
 
-bindImageUpload({
-  inputId: "explore-map-upload",
-  areaId: "explore-map-area",
-  placeholderId: "explore-map-placeholder",
-  previewId: "explore-map-preview",
-  errorId: "explore-map-error",
-  onChange: (ok, file) => { selectedExploreMapFile = file || null; hasExploreMap = ok; updateExploreSubmitState(); }
+document.getElementById("explore-map-drive")?.addEventListener("input", () => {
+  document.getElementById("explore-map-error")?.classList.remove("show");
+  updateExploreSubmitState();
 });
 
 abyssForm?.addEventListener("submit", async (e) => {
@@ -389,7 +381,11 @@ exploreForm?.addEventListener("submit", async (e) => {
   if (!selectedExplore) { alert("กรุณาเลือกเมือง"); return; }
   if (!selectedExploreAreaCount) { alert("กรุณาเลือกจำนวนพื้นที่"); return; }
   if (!selectedExplorePercent) { alert("กรุณาเลือกเปอร์เซ็นต์ที่จะสำรวจ"); return; }
-  if (!hasExploreMap || !selectedExploreMapFile) { document.getElementById("explore-map-error")?.classList.add("show"); return; }
+  const mapDriveUrl = getExploreMapDriveUrl();
+  if (!isValidGoogleDriveUrl(mapDriveUrl)) {
+    document.getElementById("explore-map-error")?.classList.add("show");
+    return;
+  }
   if (!hasExploreSlip || !selectedExploreSlipFile) { document.getElementById("explore-slip-error")?.classList.add("show"); return; }
   const account = readGameAccount("explore");
   const accountError = validateGameAccount(account);
@@ -412,12 +408,13 @@ exploreForm?.addEventListener("submit", async (e) => {
     loginId: account.loginId,
     gamePass: account.pass,
     ar: account.ar,
+    mapDriveUrl,
   };
   btnSubmitExplore.disabled = true;
   try {
     const saved = await saveOrder(
       { service: "explore", gameUsername: account.name, gameUid: account.uid, facebookName, details },
-      { slipFile: selectedExploreSlipFile, attachmentFile: selectedExploreMapFile, attachmentPurpose: "map_screenshot" }
+      { slipFile: selectedExploreSlipFile }
     );
     goToQueueAfterOrder({
       orderNumber: saved.order.orderNumber,
