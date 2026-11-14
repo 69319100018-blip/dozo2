@@ -1001,3 +1001,99 @@
   opacity: 0.45;
 }
 
+
+/* ========== Admin promo / farm gem discount ========== */
+.promo-manager {
+  padding: 1.25rem 1.35rem 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.promo-manager h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.promo-status-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 1rem 0 1.15rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.promo-status-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.promo-status-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.promo-status-value.is-active {
+  color: #f0c987;
+}
+
+.promo-discount-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.promo-discount-btn {
+  min-height: 3.1rem;
+  padding: 0.45rem 0.35rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.25s var(--bounce);
+  line-height: 1.2;
+}
+
+.promo-discount-btn span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.promo-discount-btn:hover:not(:disabled) {
+  border-color: rgba(240, 201, 135, 0.55);
+  transform: translateY(-1px);
+}
+
+.promo-discount-btn.is-selected {
+  color: #0b1426;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(184, 141, 82, 0.28);
+}
+
+.promo-discount-btn.is-selected span {
+  color: rgba(11, 20, 38, 0.75);
+}
+
+.promo-discount-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.promo-note {
+  margin-top: 0.85rem;
+  font-size: 0.8rem;
+}

@@ -541,3 +541,71 @@
   display: block;
 }
 
+
+/* Farm gem promo pricing */
+.farm-promo-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.85rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(240, 201, 135, 0.28);
+  background: linear-gradient(135deg, rgba(240, 201, 135, 0.12), rgba(184, 141, 82, 0.08));
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.farm-promo-banner[hidden] {
+  display: none !important;
+}
+
+.farm-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #0b1426;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.package-item .price-promo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.12rem;
+}
+
+.package-item .price-was {
+  text-decoration: line-through;
+  opacity: 0.65;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.package-item .price-now {
+  color: #f0c987;
+  font-weight: 750;
+}
+
+.package-item .promo-tag {
+  display: inline-block;
+  margin-top: 0.1rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(240, 201, 135, 0.18);
+  color: #f0c987;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.package-item .mem-tag {
+  display: inline-block;
+  margin-left: 0.25rem;
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
