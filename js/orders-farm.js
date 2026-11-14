@@ -23,13 +23,24 @@ function renderPackages() {
 
   const packages = getActivePackages();
   const memberMode = isMemberUser();
+  const discountPct = getFarmGemDiscountPercent();
   packages.forEach((pkg, idx) => {
     const el = document.createElement("div");
     el.className = "package-item";
     el.dataset.index = idx;
+    const listPrice = pkg.listPrice != null ? pkg.listPrice : pkg.price;
+    const hasPromo = discountPct > 0 && listPrice !== pkg.price;
+    const priceHtml = hasPromo
+      ? `<span class="price price-promo">
+          <small class="price-was">${listPrice} ฿</small>
+          <span class="price-now">${pkg.price} ฿</span>
+          <small class="promo-tag">-${discountPct}%</small>
+          ${memberMode ? '<small class="mem-tag">สมาชิก</small>' : ""}
+        </span>`
+      : `<span class="price">${pkg.price} ฿${memberMode ? '<small class="mem-tag">สมาชิก</small>' : ""}</span>`;
     el.innerHTML = `
       <span class="gems">${pkg.gems.toLocaleString()} เจม</span>
-      <span class="price">${pkg.price} ฿${memberMode ? '<small class="mem-tag">สมาชิก</small>' : ""}</span>
+      ${priceHtml}
     `;
     el.addEventListener("click", () => {
       packageGrid.querySelectorAll(".package-item").forEach(p => p.classList.remove("selected"));
@@ -41,6 +52,23 @@ function renderPackages() {
     packageGrid.appendChild(el);
   });
 
+  // ป้ายโปรโมชันเหนือกริดแพ็กเกจ (ถ้ามี)
+  let banner = document.getElementById("farm-promo-banner");
+  if (!banner && packageGrid?.parentElement) {
+    banner = document.createElement("div");
+    banner.id = "farm-promo-banner";
+    banner.className = "farm-promo-banner";
+    packageGrid.parentElement.insertBefore(banner, packageGrid);
+  }
+  if (banner) {
+    if (discountPct > 0) {
+      banner.hidden = false;
+      banner.innerHTML = `<span class="farm-promo-badge">โปรโมชัน</span> ลดราคาฟาร์มเจม <strong>${discountPct}%</strong> ทุกแพ็กเกจ`;
+    } else {
+      banner.hidden = true;
+      banner.innerHTML = "";
+    }
+  }
 }
 
 function getFarmExtraFees() {
@@ -171,6 +199,13 @@ async function loadPromptPayConfig() {
     const cfg = await DozoAPI.getConfig();
     promptPayId = (cfg.promptPayId || "").trim() || null;
     promptPayReady = Boolean(promptPayId);
+
+    // โหลดเปอร์เซ็นต์ลดราคาฟาร์มเจมจากแอดมิน แล้วรีเรนเดอร์แพ็กเกจ
+    const prevDiscount = getFarmGemDiscountPercent();
+    const nextDiscount = setFarmGemDiscountPercent(cfg.farmGemDiscountPercent);
+    if (prevDiscount !== nextDiscount && typeof renderPackages === "function") {
+      renderPackages();
+    }
 
     if (!promptPayReady) {
       console.warn("[promptpay] PROMPTPAY_ID ยังไม่ถูกตั้งค่าใน Vercel");

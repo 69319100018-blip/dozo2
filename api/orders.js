@@ -54,6 +54,39 @@ function getFarmPriceMap(role) {
   return isMemberRole(role) ? FARM_PRICES_MEMBER : FARM_PRICES_CUSTOMER;
 }
 
+const ALLOWED_FARM_DISCOUNTS = new Set([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]);
+
+async function getFarmGemDiscountPercent(sql) {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_by UUID
+      )
+    `;
+    const [row] = await sql`
+      SELECT value
+      FROM app_settings
+      WHERE key = 'farm_gem_discount_percent'
+      LIMIT 1
+    `;
+    const n = Number(row?.value);
+    if (!Number.isFinite(n) || !ALLOWED_FARM_DISCOUNTS.has(n)) return 0;
+    return n;
+  } catch (err) {
+    console.error("getFarmGemDiscountPercent", err);
+    return 0;
+  }
+}
+
+function applyFarmDiscount(basePrice, discountPercent) {
+  const pct = Number(discountPercent) || 0;
+  if (!pct || pct <= 0) return basePrice;
+  return Math.max(1, Math.round(basePrice * (100 - pct) / 100));
+}
+
 function cleanText(value, max = 1000) {
   return String(value ?? "").trim().slice(0, max);
 }
@@ -80,7 +113,7 @@ function cleanGoogleDriveUrl(value) {
   }
 }
 
-function buildDetails(service, raw, userRole = "customer") {
+function buildDetails(service, raw, userRole = "customer", farmDiscountPercent = 0) {
   const d = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const details = {
     prohibitions: cleanText(d.prohibitions, 1500),
@@ -107,7 +140,11 @@ function buildDetails(service, raw, userRole = "customer") {
     const noAbyssTheaterGems = d.noAbyssTheaterGems === true;
     const combat = d.combat === "cannot" ? "cannot" : "can";
     const authMethod = cleanText(d.authMethod, 20) || "hoyoverse";
-    const basePrice = priceMap.get(gems);
+    const listPrice = priceMap.get(gems);
+    const discountPct = ALLOWED_FARM_DISCOUNTS.has(Number(farmDiscountPercent))
+      ? Number(farmDiscountPercent)
+      : 0;
+    const basePrice = applyFarmDiscount(listPrice, discountPct);
     let total = rush ? Math.round(basePrice * 1.3) : basePrice;
     let extra = 0;
     if (noDailyGems) extra += 20;
@@ -118,6 +155,7 @@ function buildDetails(service, raw, userRole = "customer") {
     if (noDailyGems) extraBits.push("ไม่นับเจมประจำวัน +20");
     if (noAbyssTheaterGems) extraBits.push("ไม่นับอบิส/โรงละคร +50");
     if (combat === "cannot") extraBits.push("ตีมอนไม่ไหว +50");
+    const promoBit = discountPct > 0 ? ` · โปรลด ${discountPct}%` : "";
     return {
       details: {
         ...details,
@@ -131,9 +169,12 @@ function buildDetails(service, raw, userRole = "customer") {
         extraFees: extra,
         memberPrice: isMemberRole(userRole),
         mapDriveUrl,
+        listPrice,
+        discountPercent: discountPct,
+        discountedBase: basePrice,
       },
       totalPrice: total,
-      summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${extraBits.length ? ` · ${extraBits.join(" · ")}` : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""} · ${total}฿`,
+      summary: `${gems.toLocaleString("en-US")} เจม${rush ? " (งานเร่ง)" : ""}${extraBits.length ? ` · ${extraBits.join(" · ")}` : ""}${isMemberRole(userRole) ? " · สมาชิก" : ""}${promoBit} · ${total}฿`,
     };
   }
 
@@ -459,7 +500,14 @@ async function handler(request) {
         return json({ error: "ไฟล์แนบไม่ถูกต้อง" }, 400);
       }
 
-      const normalized = buildDetails(service, body.details, user?.role || "customer");
+      const farmDiscountPercent =
+        service === "farm-gem" ? await getFarmGemDiscountPercent(sql) : 0;
+      const normalized = buildDetails(
+        service,
+        body.details,
+        user?.role || "customer",
+        farmDiscountPercent
+      );
       const [order] = await sql`
         INSERT INTO orders (
           customer_id, service, summary, game_username, game_uid, facebook_name,

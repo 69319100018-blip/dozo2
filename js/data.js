@@ -86,8 +86,36 @@ const MEMBER_PACKAGES = [
   { gems: 16000, price: 1035 },
 ];
 
+/** เปอร์เซ็นต์ลดราคาฟาร์มเจมจากแอดมิน (0 = ปิดโปร) — โหลดจาก /api/config */
+let farmGemDiscountPercent = 0;
+
+function setFarmGemDiscountPercent(value) {
+  const n = Number(value);
+  const allowed = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+  farmGemDiscountPercent = allowed.includes(n) ? n : 0;
+  return farmGemDiscountPercent;
+}
+
+function getFarmGemDiscountPercent() {
+  return farmGemDiscountPercent || 0;
+}
+
+function applyFarmDiscountToPrice(price) {
+  const pct = getFarmGemDiscountPercent();
+  if (!pct) return Number(price) || 0;
+  return Math.max(1, Math.round(Number(price) * (100 - pct) / 100));
+}
+
 function getActivePackages() {
-  return isMemberUser() ? MEMBER_PACKAGES : CUSTOMER_PACKAGES;
+  const base = isMemberUser() ? MEMBER_PACKAGES : CUSTOMER_PACKAGES;
+  const pct = getFarmGemDiscountPercent();
+  if (!pct) return base.map((pkg) => ({ ...pkg }));
+  return base.map((pkg) => ({
+    ...pkg,
+    listPrice: pkg.price,
+    price: applyFarmDiscountToPrice(pkg.price),
+    discountPercent: pct,
+  }));
 }
 
 function isMemberUser() {

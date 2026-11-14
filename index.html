@@ -1456,6 +1456,7 @@
           <button type="button" class="admin-tab active" data-admin-tab="orders">คำสั่งซื้อ</button>
           <button type="button" class="admin-tab" data-admin-tab="customers">ลูกค้า</button>
           <button type="button" class="admin-tab" data-admin-tab="team">ลูกทีม</button>
+          <button type="button" class="admin-tab" data-admin-tab="promo">ลดราคาฟาร์มเจม</button>
         </div>
 
         <!-- Orders -->
@@ -1545,6 +1546,42 @@
             <button type="button" class="btn-sm" id="btn-refresh-team">รีเฟรชรายชื่อลูกทีม</button>
           </div>
           <div class="team-grid" id="team-grid"></div>
+        </div>
+
+        <!-- Promo / Farm gem discount -->
+        <div class="admin-panel" id="admin-panel-promo">
+          <section class="promo-manager glass">
+            <h3>ลดราคาฟาร์มเจม (โปรโมชัน)</h3>
+            <p class="hint">
+              เปิดใช้งานเมื่ออยากจัดโปร โดยไม่ต้องแก้โค้ดหรือ deploy ใหม่ —
+              ราคาจะลดตามเปอร์เซ็นต์ที่เลือกทันทีทั้งหน้าลูกค้าและตอนคิดเงินในระบบ
+            </p>
+            <div class="promo-status-card" id="promo-status-card">
+              <div class="promo-status-label">สถานะปัจจุบัน</div>
+              <div class="promo-status-value" id="promo-status-value">กำลังโหลด...</div>
+            </div>
+            <div class="form-group">
+              <label>เลือกเปอร์เซ็นต์ลดราคา</label>
+              <div class="promo-discount-grid" id="promo-discount-grid" role="group" aria-label="เปอร์เซ็นต์ลดราคาฟาร์มเจม">
+                <button type="button" class="promo-discount-btn" data-discount="0">ปิดโปร<br /><span>ราคาปกติ</span></button>
+                <button type="button" class="promo-discount-btn" data-discount="5">5%</button>
+                <button type="button" class="promo-discount-btn" data-discount="10">10%</button>
+                <button type="button" class="promo-discount-btn" data-discount="15">15%</button>
+                <button type="button" class="promo-discount-btn" data-discount="20">20%</button>
+                <button type="button" class="promo-discount-btn" data-discount="25">25%</button>
+                <button type="button" class="promo-discount-btn" data-discount="30">30%</button>
+                <button type="button" class="promo-discount-btn" data-discount="35">35%</button>
+                <button type="button" class="promo-discount-btn" data-discount="40">40%</button>
+                <button type="button" class="promo-discount-btn" data-discount="45">45%</button>
+                <button type="button" class="promo-discount-btn" data-discount="50">50%</button>
+              </div>
+            </div>
+            <p class="hint" id="promo-management-message" aria-live="polite"></p>
+            <p class="hint promo-note">
+              หมายเหตุ: ส่วนลดใช้กับราคาแพ็กเกจฟาร์มเจมเท่านั้น (ก่อนบวกงานเร่ง / ค่าเพิ่มพิเศษ)
+              และใช้ทั้งลูกค้าทั่วไปและสมาชิก
+            </p>
+          </section>
         </div>
       </div>
     </main>

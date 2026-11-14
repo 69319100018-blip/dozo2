@@ -34,6 +34,13 @@
       return request("/api/config", { method: "GET" });
     },
 
+    setFarmGemDiscount(farmGemDiscountPercent) {
+      return request("/api/config", {
+        method: "PATCH",
+        body: JSON.stringify({ farmGemDiscountPercent }),
+      });
+    },
+
     async me() {
       const result = await request("/api/auth", { method: "GET" });
       return result.user || null;

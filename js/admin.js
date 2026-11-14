@@ -530,11 +530,86 @@ teamAddForm?.addEventListener("submit", async event => {
   }
 });
 
+async function renderAdminPromo() {
+  const statusEl = document.getElementById("promo-status-value");
+  const messageEl = document.getElementById("promo-management-message");
+  const grid = document.getElementById("promo-discount-grid");
+  if (!grid) return;
+
+  try {
+    const cfg = await DozoAPI.getConfig();
+    const pct = setFarmGemDiscountPercent(cfg.farmGemDiscountPercent);
+    if (statusEl) {
+      statusEl.textContent =
+        pct > 0 ? `เปิดโปรลดราคา ${pct}%` : "ปิดโปร — ใช้ราคาปกติ";
+      statusEl.classList.toggle("is-active", pct > 0);
+    }
+    grid.querySelectorAll(".promo-discount-btn").forEach((btn) => {
+      const val = Number(btn.dataset.discount);
+      btn.classList.toggle("is-selected", val === pct);
+      btn.disabled = false;
+    });
+    if (messageEl && !messageEl.dataset.keep) messageEl.textContent = "";
+  } catch (error) {
+    if (statusEl) statusEl.textContent = "โหลดสถานะไม่สำเร็จ";
+    if (messageEl) messageEl.textContent = error.message || "โหลดค่าลดราคาไม่สำเร็จ";
+  }
+}
+
+async function setAdminFarmDiscount(percent) {
+  const messageEl = document.getElementById("promo-management-message");
+  const grid = document.getElementById("promo-discount-grid");
+  const statusEl = document.getElementById("promo-status-value");
+  const buttons = grid ? [...grid.querySelectorAll(".promo-discount-btn")] : [];
+  buttons.forEach((btn) => { btn.disabled = true; });
+  if (messageEl) {
+    messageEl.dataset.keep = "1";
+    messageEl.textContent = "กำลังบันทึก...";
+  }
+  try {
+    const result = await DozoAPI.setFarmGemDiscount(percent);
+    const pct = setFarmGemDiscountPercent(result.farmGemDiscountPercent ?? percent);
+    if (statusEl) {
+      statusEl.textContent =
+        pct > 0 ? `เปิดโปรลดราคา ${pct}%` : "ปิดโปร — ใช้ราคาปกติ";
+      statusEl.classList.toggle("is-active", pct > 0);
+    }
+    buttons.forEach((btn) => {
+      const val = Number(btn.dataset.discount);
+      btn.classList.toggle("is-selected", val === pct);
+    });
+    if (typeof renderPackages === "function") renderPackages();
+    if (messageEl) {
+      messageEl.textContent =
+        result.message ||
+        (pct > 0 ? `เปิดลดราคาฟาร์มเจม ${pct}% แล้ว` : "ปิดโปรโมชันแล้ว");
+    }
+  } catch (error) {
+    if (messageEl) messageEl.textContent = error.message || "บันทึกไม่สำเร็จ";
+  } finally {
+    buttons.forEach((btn) => { btn.disabled = false; });
+    if (messageEl) {
+      setTimeout(() => {
+        delete messageEl.dataset.keep;
+      }, 2500);
+    }
+  }
+}
+
+document.getElementById("promo-discount-grid")?.addEventListener("click", (e) => {
+  const btn = e.target.closest?.(".promo-discount-btn");
+  if (!btn || btn.disabled) return;
+  const percent = Number(btn.dataset.discount);
+  if (!Number.isFinite(percent)) return;
+  setAdminFarmDiscount(percent);
+});
+
 async function renderAdminAll() {
   await ensureStaffList();
   await renderAdminOrders();
   await renderAdminCustomers();
   await renderAdminTeam();
+  await renderAdminPromo();
   const staffCountEl = document.getElementById("admin-stat-staff");
   if (staffCountEl) staffCountEl.textContent = String(staffListCache.length);
 }
@@ -546,6 +621,7 @@ document.querySelectorAll(".admin-tab").forEach(tab => {
     tab.classList.add("active");
     const panel = document.getElementById("admin-panel-" + tab.dataset.adminTab);
     if (panel) panel.classList.add("active");
+    if (tab.dataset.adminTab === "promo") renderAdminPromo();
   });
 });
 
